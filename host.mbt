@@ -108,6 +108,23 @@ fn percent_decode_bytes(input : Bytes) -> Bytes {
 }
 
 ///|
+/// Check if a string contains any forbidden domain code point per WHATWG URL spec
+/// Forbidden domain code points = forbidden host code points + C0 controls + % + DEL
+fn contains_forbidden_domain_codepoint(s : String) -> Bool {
+  for c in s {
+    // C0 controls (U+0000-U+001F) and DEL (U+007F)
+    if c is ('\u{0000}'..='\u{001f}' | '\u{007f}') {
+      return true
+    }
+    // Forbidden host code points plus %
+    if c is (' ' | '#' | '%' | '/' | ':' | '<' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '|') {
+      return true
+    }
+  }
+  false
+}
+
+///|
 pub fn Host::parse(
   input : StringView,
   is_opaque? : Bool = false,
@@ -133,6 +150,10 @@ pub fn Host::parse(
         )
       } catch {
         _ => raise DomainToAscii
+      }
+      // Check for forbidden domain code points after IDNA conversion
+      if contains_forbidden_domain_codepoint(ascii_domain) {
+        raise HostInvalidCodePoint
       }
       if ends_in_a_number(ascii_domain) {
         return IPv4(IPv4::parse(ascii_domain))
@@ -264,6 +285,20 @@ fn c0_control_percent_encode_set(char : Char) -> Bool {
 fn query_percent_encode_set(char : Char) -> Bool {
   return char
     is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '#' | '<' | '>')
+}
+
+///|
+/// Special query percent-encode set: query set + single quote (for http/https)
+fn special_query_percent_encode_set(char : Char) -> Bool {
+  return char
+    is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '#' | '<' | '>' | '\'')
+}
+
+///|
+/// Fragment percent-encode set: C0 control + space + "<>`
+fn fragment_percent_encode_set(char : Char) -> Bool {
+  return char
+    is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '<' | '>' | '`')
 }
 
 ///|

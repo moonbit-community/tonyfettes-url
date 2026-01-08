@@ -372,7 +372,7 @@ pub fn Url::set_hash(self : Url, hash : String) -> Unit {
     ['#', .. rest] => rest
     _ => hash[:]
   }
-  self.fragment = Some(utf8_percent_encode(fragment.to_string(), c0_control_percent_encode_set))
+  self.fragment = Some(utf8_percent_encode(fragment.to_string(), fragment_percent_encode_set))
 }
 
 ///|
@@ -947,6 +947,12 @@ fn Url::parse_basic(
           state = Fragment
         } else {
           // Percent-encode query characters
+          // Use special query encode set for special URLs (encodes ')
+          let encode_set = if url.is_special() {
+            special_query_percent_encode_set
+          } else {
+            query_percent_encode_set
+          }
           match url.query {
             Some(q) => {
               if c is '%' {
@@ -955,7 +961,7 @@ fn Url::parse_basic(
                     url.query = Some("\{q}\{c}")
                   _ => url.query = Some("\{q}%25")
                 }
-              } else if query_percent_encode_set(c) {
+              } else if encode_set(c) {
                 let bytes = @encoding/utf8.encode([c])
                 let mut encoded = q
                 for byte in bytes {
@@ -980,7 +986,7 @@ fn Url::parse_basic(
                   url.fragment = Some("\{f}\{c}")
                 _ => url.fragment = Some("\{f}%25")
               }
-            } else if c0_control_percent_encode_set(c) {
+            } else if fragment_percent_encode_set(c) {
               let bytes = @encoding/utf8.encode([c])
               let mut encoded = f
               for byte in bytes {
