@@ -381,13 +381,28 @@ pub impl Show for Url with output(self : Url, logger : &Logger) -> Unit {
 }
 
 ///|
-fn trim_c0_control(input : StringView) -> StringView {
+/// Remove all ASCII tab (0x09), LF (0x0A), and CR (0x0D) from the entire input
+fn remove_ascii_tab_or_newline(input : StringView) -> String {
+  let output = StringBuilder::new()
+  for c in input {
+    if !(c is ('\t' | '\n' | '\r')) {
+      output.write_char(c)
+    }
+  }
+  output.to_string()
+}
+
+///|
+/// Trim leading and trailing C0 control (U+0000-U+001F) or space (U+0020) from input
+fn trim_c0_control_or_space(input : StringView) -> StringView {
+  // Trim from start
   let input = loop input {
-    ['\u{0000}'..='\u{001f}' | '\u{007f}', .. input] => continue input
+    ['\u{0000}'..='\u{0020}', .. rest] => continue rest
     input => break input
   }
+  // Trim from end
   let input = loop input {
-    ['\u{0000}'..='\u{001f}' | '\u{007f}', .. input] => continue input
+    [.. rest, '\u{0000}'..='\u{0020}'] => continue rest
     input => break input
   }
   input
@@ -519,8 +534,11 @@ fn Url::parse_basic(
   let mut at_sign_seen : Bool = false
   let mut inside_brackets : Bool = false
   let mut password_token_seen : Bool = false
-  let input = trim_c0_control(input)
-  let pointer = StringPointer::new(input)
+  // Per WHATWG: 1. Remove leading/trailing C0 control or space
+  //             2. Remove all ASCII tab or newline from entire input
+  let input = trim_c0_control_or_space(input)
+  let input = remove_ascii_tab_or_newline(input)
+  let pointer = StringPointer::new(input[:])
   // Outer loop for restart mechanism (WHATWG "start over")
   while true {
     for view = pointer.view(); view is [c, .. remaining]; view = pointer.next() {
