@@ -786,10 +786,10 @@ fn Url::parse_basic(
             let mut port_value : UInt64 = 0
             for ch in port_str {
               port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
-            }
-            if port_value > 65535 {
-              // Port out of range
-              return None
+              // Check overflow during accumulation to prevent UInt64 wraparound
+              if port_value > 65535 {
+                return None
+              }
             }
             // Check if port is default for the scheme
             let port_u16 = port_value.to_uint16()
@@ -1196,9 +1196,10 @@ fn Url::parse_basic(
         let mut port_value : UInt64 = 0
         for ch in port_str {
           port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
-        }
-        if port_value > 65535 {
-          return None
+          // Check overflow during accumulation to prevent UInt64 wraparound
+          if port_value > 65535 {
+            return None
+          }
         }
         let port_u16 = port_value.to_uint16()
         let is_default = match url.scheme {
