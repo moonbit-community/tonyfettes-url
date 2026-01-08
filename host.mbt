@@ -7,6 +7,39 @@ pub enum Host {
 } derive(ToJson)
 
 ///|
+/// Serialize host per WHATWG URL spec
+pub fn Host::to_string(self : Host) -> String {
+  match self {
+    Domain(domain) => domain
+    IPv4(ipv4) => ipv4.to_string()
+    IPv6(ipv6) => "[\{ipv6.to_string()}]"
+    Opaque(opaque_) => opaque_
+  }
+}
+
+///|
+pub impl Show for Host with output(self : Host, logger : &Logger) -> Unit {
+  logger.write_string(self.to_string())
+}
+
+///|
+/// Convert host to Unicode form for display (Punycode → Unicode)
+pub fn Host::to_unicode(self : Host) -> String {
+  match self {
+    Domain(domain) => {
+      try {
+        @idna.to_unicode(domain)
+      } catch {
+        _ => domain // If IDNA conversion fails, return as-is
+      }
+    }
+    IPv4(ipv4) => ipv4.to_string()
+    IPv6(ipv6) => "[\{ipv6.to_string()}]"
+    Opaque(s) => s
+  }
+}
+
+///|
 suberror ValidationError {
   DomainToAscii
   HostInvalidCodePoint
@@ -91,10 +124,16 @@ pub fn Host::parse(
         return Host::Opaque(opaque_host)
       }
       let domain = @encoding/utf8.decode_lossy(percent_decode_string(input))
-      for c in domain {
-        guard c.is_ascii() else { raise DomainToAscii }
+      // Use IDNA to convert internationalized domain names to ASCII (Punycode)
+      let ascii_domain = try {
+        @idna.to_ascii(
+          domain,
+          use_std3_ascii_rules=false,
+          verify_dns_length=false,
+        )
+      } catch {
+        _ => raise DomainToAscii
       }
-      let ascii_domain = domain.to_lower()
       if ends_in_a_number(ascii_domain) {
         return IPv4(IPv4::parse(ascii_domain))
       }

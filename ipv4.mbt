@@ -2,6 +2,21 @@
 struct IPv4(UInt)
 
 ///|
+pub fn IPv4::to_string(self : IPv4) -> String {
+  let n = self.0
+  let b0 = (n >> 24) & 0xFF
+  let b1 = (n >> 16) & 0xFF
+  let b2 = (n >> 8) & 0xFF
+  let b3 = n & 0xFF
+  "\{b0}.\{b1}.\{b2}.\{b3}"
+}
+
+///|
+pub impl Show for IPv4 with output(self : IPv4, logger : &Logger) -> Unit {
+  logger.write_string(self.to_string())
+}
+
+///|
 pub impl ToJson for IPv4 with to_json(self : IPv4) -> Json {
   let b0 = ((self.0 >> 24) & 0xFF).to_byte()
   let b1 = ((self.0 >> 16) & 0xFF).to_byte()
@@ -47,6 +62,7 @@ fn IPv4::parse_number(input : StringView) -> UInt64 raise ValidationError {
   }
   match input {
     ['0', 'x' | 'X', .. rest] => {
+      // Hexadecimal
       let mut value : UInt64 = 0
       for c in rest {
         let digit = match c {
@@ -60,7 +76,9 @@ fn IPv4::parse_number(input : StringView) -> UInt64 raise ValidationError {
       }
       value
     }
-    ['0', '0'..='7' as c, .. rest] => {
+    ['0', '0'..='9' as c, .. rest] => {
+      // Octal (starts with 0 followed by digits)
+      guard c >= '0' && c <= '7' else { raise IPv4NonNumericPart }
       let mut value : UInt64 = (c.to_int() - '0').to_uint64()
       for c in rest {
         guard c >= '0' && c <= '7' else { raise IPv4NonNumericPart }
@@ -68,7 +86,9 @@ fn IPv4::parse_number(input : StringView) -> UInt64 raise ValidationError {
       }
       value
     }
+    ['0'] => 0UL // Single zero is decimal 0
     ['1'..='9' as c, .. rest] => {
+      // Decimal (starts with 1-9)
       let mut value : UInt64 = (c.to_int() - '0').to_uint64()
       for c in rest {
         guard c >= '0' && c <= '9' else { raise IPv4NonNumericPart }

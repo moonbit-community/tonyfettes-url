@@ -1,4 +1,7 @@
 {
   "name": "tonyfettes/url",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "deps": {
+    "tonyfettes/unicode": "0.1.1"
+  }
 }

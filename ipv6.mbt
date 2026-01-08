@@ -2,6 +2,79 @@
 struct IPv6(FixedArray[UInt16])
 
 ///|
+/// Serialize IPv6 address per WHATWG URL spec
+/// Finds longest run of consecutive zeros for :: compression
+pub fn IPv6::to_string(self : IPv6) -> String {
+  let address = self.0
+  // Find the longest sequence of consecutive 0 pieces for compression
+  let mut compress_start : Int? = None
+  let mut compress_len = 0
+  let mut current_start : Int? = None
+  let mut current_len = 0
+  for i = 0; i < 8; i = i + 1 {
+    if address[i] == 0 {
+      if current_start is None {
+        current_start = Some(i)
+        current_len = 1
+      } else {
+        current_len = current_len + 1
+      }
+    } else {
+      if current_len > compress_len && current_len > 1 {
+        compress_start = current_start
+        compress_len = current_len
+      }
+      current_start = None
+      current_len = 0
+    }
+  }
+  // Check at the end
+  if current_len > compress_len && current_len > 1 {
+    compress_start = current_start
+    compress_len = current_len
+  }
+  // Build the string
+  let result = StringBuilder::new()
+  let mut i = 0
+  let mut ignore = false // Track if we just wrote :: and should not add another :
+  while i < 8 {
+    if compress_start is Some(start) && i == start {
+      // Always write "::" for zero compression
+      result.write_string("::")
+      i = i + compress_len
+      ignore = true
+      continue
+    }
+    if i > 0 && !ignore {
+      result.write_char(':')
+    }
+    ignore = false
+    // Write hex value (lowercase, no leading zeros)
+    let value = address[i].to_int()
+    if value == 0 {
+      result.write_char('0')
+    } else {
+      let hex_chars : FixedArray[Char] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
+      let mut started = false
+      for shift = 12; shift >= 0; shift = shift - 4 {
+        let digit = (value >> shift) & 0xf
+        if digit != 0 || started {
+          result.write_char(hex_chars[digit])
+          started = true
+        }
+      }
+    }
+    i = i + 1
+  }
+  result.to_string()
+}
+
+///|
+pub impl Show for IPv6 with output(self : IPv6, logger : &Logger) -> Unit {
+  logger.write_string(self.to_string())
+}
+
+///|
 pub impl ToJson for IPv6 with to_json(self : IPv6) -> Json {
   self.0.to_json()
 }
