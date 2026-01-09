@@ -858,8 +858,8 @@ fn Url::parse_basic(
               if buffer_str.length() == 2 {
                 match buffer_str {
                   [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
-                    // Normalize Windows drive letter
-                    let normalized = "\{letter.to_ascii_uppercase()}:"
+                    // Normalize Windows drive letter (preserve case, replace | with :)
+                    let normalized = "\{letter}:"
                     match url.path {
                       Segments(segments) => segments.push(normalized)
                       _ => ()
@@ -1240,8 +1240,8 @@ fn Url::parse_basic(
         if buffer_str.length() == 2 {
           match buffer_str {
             [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
-              // Windows drive letter in host position
-              url.path = Segments(["\{letter.to_ascii_uppercase()}:"])
+              // Windows drive letter in host position (preserve case)
+              url.path = Segments(["\{letter}:"])
             }
             _ => {
               let host = try Host::parse(buffer_str) catch {
