@@ -845,7 +845,7 @@ fn Url::parse_basic(
                 _ => ()
               }
             }
-          } else if buffer_str == "." || buffer_str.to_lower() is (".%2e" | "%2e.") {
+          } else if buffer_str == "." || buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
             if !(c is ('/' | '\\')) {
               match url.path {
                 Segments(segments) => segments.push("")
@@ -1220,7 +1220,7 @@ fn Url::parse_basic(
       let buffer_str = buffer.to_string()
       if buffer_str == ".." || buffer_str.to_lower() is ("..%2e" | ".%2e." | "%2e.." | "%2e%2e") {
         url.path.shorten()
-      } else if buffer_str == "." || buffer_str.to_lower() is (".%2e" | "%2e.") {
+      } else if buffer_str == "." || buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
         // Do nothing for single dot at EOF
         ()
       } else {
