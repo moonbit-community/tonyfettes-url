@@ -53,7 +53,7 @@ test "Host::parse" {
     { "Err": "IPv4NonNumericPart" },
     // "example.255" - "example" is not a valid IPv4 number
     { "Err": "IPv4NonNumericPart" },
-    // "example^example" - not numeric, stays as domain
-    { "Ok": ["Domain", "example^example"] },
+    // "example^example" - ^ is a forbidden domain code point per WHATWG
+    { "Err": "HostInvalidCodePoint" },
   ])
 }
