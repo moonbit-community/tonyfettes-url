@@ -78,8 +78,8 @@ pub fn Url::to_string(self : Url) -> String {
   match self.path {
     Opaque(path) => result.write_string(path)
     Segments(segments) => {
-      // Per WHATWG: If host is non-null and path is empty, append "/"
-      if segments.is_empty() && self.host is Some(_) {
+      // Per WHATWG: If host is non-null, path is empty, and URL is special, append "/"
+      if segments.is_empty() && self.host is Some(_) && self.is_special() {
         result.write_char('/')
       } else {
         for segment in segments {
@@ -1223,7 +1223,8 @@ fn Url::parse_basic(
       } else if buffer_str == "." || buffer_str.to_lower() is (".%2e" | "%2e.") {
         // Do nothing for single dot at EOF
         ()
-      } else if !buffer_str.is_empty() {
+      } else {
+        // Push segment (may be empty for trailing slash in non-special URLs)
         match url.path {
           Segments(segments) => segments.push(utf8_percent_encode(buffer_str, path_percent_encode_set))
           Opaque(s) => url.path = Opaque(s + "/" + utf8_percent_encode(buffer_str, path_percent_encode_set))
