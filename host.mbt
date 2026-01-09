@@ -212,10 +212,13 @@ test "ends_in_a_number" {
 }
 
 ///|
+/// Parse an opaque host per WHATWG URL spec
+/// Only rejects forbidden host code points, accepts everything else
 fn Host::parse_opaque(input : StringView) -> String raise ValidationError {
-  loop input {
-    [
-      '\u{0000}'
+  // Check for forbidden host code points
+  for c in input {
+    if c
+      is ('\u{0000}'
       | '\u{0009}'
       | '\u{000a}'
       | '\u{000d}'
@@ -231,43 +234,11 @@ fn Host::parse_opaque(input : StringView) -> String raise ValidationError {
       | '\\'
       | ']'
       | '^'
-      | '|',
-      ..,
-    ] => raise HostInvalidCodePoint
-    [
-      '0'..='9'
-      | 'a'..='z'
-      | 'A'..='Z'
-      | '!'
-      | '$'
-      | '&'
-      | '\''
-      | '('
-      | ')'
-      | '*'
-      | '+'
-      | ','
-      | '-'
-      | '.'
-      | ';'
-      | '='
-      | '_'
-      | '~'
-      | '\u{00a0}'..='\u{10ffff}',
-      .. rest,
-    ] => continue rest
-    [
-      '%',
-      '0'..='9'
-      | 'a'..='f'
-      | 'A'..='F',
-      '0'..='9'
-      | 'a'..='f'
-      | 'A'..='F',
-      .. rest,
-    ] => continue rest
-    _ => raise InvalidUrlUnit
+      | '|') {
+      raise HostInvalidCodePoint
+    }
   }
+  // Percent-encode C0 controls in the output
   utf8_percent_encode(input, c0_control_percent_encode_set)
 }
 
