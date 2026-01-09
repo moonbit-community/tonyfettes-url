@@ -604,7 +604,8 @@ fn Url::parse_basic(
   let pointer = StringPointer::new(input[:])
   // Outer loop for restart mechanism (WHATWG "start over")
   while true {
-    for view = pointer.view(); view is [c, .. remaining]; view = pointer.next() {
+    for view = pointer.view(); ; view = pointer.next() {
+      guard view is [c, .. remaining] else { break }
       match state {
         SchemeStart =>
           if c.is_ascii_alphabetic() {
