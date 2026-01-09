@@ -142,6 +142,7 @@ pub fn Host::parse(
       }
       let domain = @encoding/utf8.decode_lossy(percent_decode_string(input))
       // Use IDNA to convert internationalized domain names to ASCII (Punycode)
+      // Per WHATWG, empty labels are allowed (unlike strict DNS/IDNA)
       let ascii_domain = try {
         @idna.to_ascii(
           domain,
@@ -149,6 +150,22 @@ pub fn Host::parse(
           verify_dns_length=false,
         )
       } catch {
+        @idna.EmptyLabel => {
+          // Allow empty labels per WHATWG only if domain consists of
+          // valid ASCII domain characters (intentional empty labels like "." or "..")
+          // Reject if empty label comes from IDNA mapping (e.g., soft hyphen -> "")
+          let is_valid_ascii_domain = domain.iter().all(fn(c) {
+            c.is_ascii_lowercase() ||
+            c.is_ascii_uppercase() ||
+            c.is_ascii_digit() ||
+            c is ('.' | '-')
+          })
+          if is_valid_ascii_domain && !domain.is_empty() {
+            domain
+          } else {
+            raise DomainToAscii
+          }
+        }
         _ => raise DomainToAscii
       }
       // Check for forbidden domain code points after IDNA conversion
