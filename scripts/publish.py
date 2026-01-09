@@ -32,6 +32,7 @@ def main():
     # 2. Copy root files
     shutil.copy(ROOT / "moon.mod.json", PUBLISH / "moon.mod.json")
     shutil.copy(ROOT / "README.md", PUBLISH / "README.md")
+    shutil.copy(ROOT / "LICENSE", PUBLISH / "LICENSE")
 
     # 3. Copy source .mbt files
     for mbt_file in SOURCE_FILES:
