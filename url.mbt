@@ -461,6 +461,20 @@ fn is_special_scheme(scheme : StringView) -> Bool {
 }
 
 ///|
+/// Check if a path segment is a single-dot URL path segment per WHATWG spec
+/// A single-dot URL path segment is "." or an ASCII case-insensitive match for "%2e"
+fn is_single_dot_path_segment(segment : String) -> Bool {
+  segment == "." || segment.to_lower() == "%2e"
+}
+
+///|
+/// Check if a path segment is a double-dot URL path segment per WHATWG spec
+/// A double-dot URL path segment is ".." or an ASCII case-insensitive match for ".%2e", "%2e.", or "%2e%2e"
+fn is_double_dot_path_segment(segment : String) -> Bool {
+  segment == ".." || segment.to_lower() is (".%2e" | "%2e." | "%2e%2e")
+}
+
+///|
 priv enum State {
   SchemeStart
   Scheme
@@ -897,8 +911,7 @@ fn Url::parse_basic(
             }
             let buffer_str = buffer.to_string()
             // Handle . and .. path segments
-            if buffer_str == ".." ||
-              buffer_str.to_lower() is ("..%2e" | ".%2e." | "%2e.." | "%2e%2e") {
+            if is_double_dot_path_segment(buffer_str) {
               url.path.shorten(scheme=url.scheme)
               if !(c is ('/' | '\\')) {
                 match url.path {
@@ -906,8 +919,7 @@ fn Url::parse_basic(
                   _ => ()
                 }
               }
-            } else if buffer_str == "." ||
-              buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
+            } else if is_single_dot_path_segment(buffer_str) {
               if !(c is ('/' | '\\')) {
                 match url.path {
                   Segments(segments) => segments.push("")
@@ -1373,16 +1385,14 @@ fn Url::parse_basic(
         }
       Path => {
         let buffer_str = buffer.to_string()
-        if buffer_str == ".." ||
-          buffer_str.to_lower() is ("..%2e" | ".%2e." | "%2e.." | "%2e%2e") {
+        if is_double_dot_path_segment(buffer_str) {
           url.path.shorten(scheme=url.scheme)
           // Push empty segment for trailing slash
           match url.path {
             Segments(segments) => segments.push("")
             _ => ()
           }
-        } else if buffer_str == "." ||
-          buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
+        } else if is_single_dot_path_segment(buffer_str) {
           // Single dot at EOF - push empty segment for trailing slash
           match url.path {
             Segments(segments) => segments.push("")

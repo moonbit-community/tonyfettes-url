@@ -54,7 +54,6 @@ suberror ValidationError {
   IPv4InIPv6TooManyPieces
   IPv4InIPv6OutOfRangePart
   IPv4InIPv6TooFewParts
-  InvalidUrlUnit
   MissingSchemeNonRelativeUrl
   SpecialSchemeMissingFollowingSolidus
   InvalidReverseSolidus
