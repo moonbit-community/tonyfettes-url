@@ -994,7 +994,8 @@ fn Url::parse_basic(
           }
           None => ()
         }
-      File =>
+      File => {
+        url.scheme = "file"
         if c is ('/' | '\\') {
           if c is '\\' {
             validation_errors.push(InvalidReverseSolidus)
@@ -1030,7 +1031,9 @@ fn Url::parse_basic(
           state = Path
           pointer.decrease()
         }
-      FileSlash =>
+      }
+      FileSlash => {
+        url.scheme = "file"
         if c is ('/' | '\\') {
           if c is '\\' {
             validation_errors.push(InvalidReverseSolidus)
@@ -1054,7 +1057,9 @@ fn Url::parse_basic(
           state = Path
           pointer.decrease()
         }
+      }
       FileHost => {
+        url.scheme = "file"
         if c is ('/' | '\\' | '?' | '#') {
           pointer.decrease()
           // Check for Windows drive letter
