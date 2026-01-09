@@ -896,11 +896,9 @@ fn Url::parse_basic(
         } else {
           // Percent-encode if needed
           if c is '%' {
-            match remaining {
-              [c1, c2, ..] if is_ascii_hex_digit(c1) && is_ascii_hex_digit(c2) =>
-                buffer.write_char(c)
-              _ => buffer.write_string("%25")
-            }
+            // Per WHATWG: % followed by non-hex is a validation error but pass through literally
+            // (% is not in the path percent-encode set so it shouldn't be encoded)
+            buffer.write_char(c)
           } else if path_percent_encode_set(c) {
             // This character should be percent-encoded
             let bytes = @encoding/utf8.encode([c])
@@ -956,11 +954,9 @@ fn Url::parse_basic(
           match url.query {
             Some(q) => {
               if c is '%' {
-                match remaining {
-                  [c1, c2, ..] if is_ascii_hex_digit(c1) && is_ascii_hex_digit(c2) =>
-                    url.query = Some("\{q}\{c}")
-                  _ => url.query = Some("\{q}%25")
-                }
+                // Per WHATWG: % followed by non-hex is a validation error but pass through literally
+                // (% is not in the query percent-encode set so it shouldn't be encoded)
+                url.query = Some("\{q}\{c}")
               } else if encode_set(c) {
                 let bytes = @encoding/utf8.encode([c])
                 let mut encoded = q
@@ -981,11 +977,9 @@ fn Url::parse_basic(
         match url.fragment {
           Some(f) => {
             if c is '%' {
-              match remaining {
-                [c1, c2, ..] if is_ascii_hex_digit(c1) && is_ascii_hex_digit(c2) =>
-                  url.fragment = Some("\{f}\{c}")
-                _ => url.fragment = Some("\{f}%25")
-              }
+              // Per WHATWG: % followed by non-hex is a validation error but pass through literally
+              // (% is not in the fragment percent-encode set so it shouldn't be encoded)
+              url.fragment = Some("\{f}\{c}")
             } else if fragment_percent_encode_set(c) {
               let bytes = @encoding/utf8.encode([c])
               let mut encoded = f
@@ -1271,6 +1265,18 @@ fn Url::parse_basic(
           }
         }
       }
+    }
+    SpecialRelativeOrAuthority | Relative | RelativeSlash => {
+      // At EOF in these states, copy from base URL
+      guard base is Some(base) else {
+        abort("base must be Some(base) in Relative-like state at EOF")
+      }
+      url.username = base.username
+      url.password = base.password
+      url.host = base.host
+      url.port = base.port
+      url.path = base.path.clone()
+      url.query = base.query
     }
     _ => ()
     }
