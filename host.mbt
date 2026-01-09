@@ -26,13 +26,10 @@ pub impl Show for Host with output(self : Host, logger : &Logger) -> Unit {
 /// Convert host to Unicode form for display (Punycode → Unicode)
 pub fn Host::to_unicode(self : Host) -> String {
   match self {
-    Domain(domain) => {
-      try {
-        @idna.to_unicode(domain)
-      } catch {
+    Domain(domain) =>
+      @idna.to_unicode(domain) catch {
         _ => domain // If IDNA conversion fails, return as-is
       }
-    }
     IPv4(ipv4) => ipv4.to_string()
     IPv6(ipv6) => "[\{ipv6.to_string()}]"
     Opaque(s) => s
@@ -117,7 +114,21 @@ fn contains_forbidden_domain_codepoint(s : String) -> Bool {
       return true
     }
     // Forbidden host code points plus %
-    if c is (' ' | '#' | '%' | '/' | ':' | '<' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '|') {
+    if c
+      is (' '
+      | '#'
+      | '%'
+      | '/'
+      | ':'
+      | '<'
+      | '>'
+      | '?'
+      | '@'
+      | '['
+      | '\\'
+      | ']'
+      | '^'
+      | '|') {
       return true
     }
   }
@@ -143,30 +154,44 @@ pub fn Host::parse(
       let domain = @encoding/utf8.decode_lossy(percent_decode_string(input))
       // Use IDNA to convert internationalized domain names to ASCII (Punycode)
       // Per WHATWG, empty labels are allowed (unlike strict DNS/IDNA)
-      let ascii_domain = try {
-        @idna.to_ascii(
-          domain,
-          use_std3_ascii_rules=false,
-          verify_dns_length=false,
-        )
-      } catch {
+      let ascii_domain = @idna.to_ascii(
+        domain,
+        use_std3_ascii_rules=false,
+        verify_dns_length=false,
+      ) catch {
         @idna.EmptyLabel => {
           // Allow empty labels per WHATWG only if domain consists of
           // valid ASCII domain characters (intentional empty labels like "." or "..")
           // Reject if empty label comes from IDNA mapping (e.g., soft hyphen -> "")
-          let is_valid_ascii_domain = domain.iter().all(fn(c) {
-            c.is_ascii_lowercase() ||
-            c.is_ascii_uppercase() ||
-            c.is_ascii_digit() ||
-            c is ('.' | '-')
-          })
+          let is_valid_ascii_domain = domain
+            .iter()
+            .all(fn(c) {
+              c.is_ascii_lowercase() ||
+              c.is_ascii_uppercase() ||
+              c.is_ascii_digit() ||
+              c is ('.' | '-')
+            })
           if is_valid_ascii_domain && !domain.is_empty() {
             domain
           } else {
             raise DomainToAscii
           }
         }
-        _ => raise DomainToAscii
+        _ => {
+          // Per WHATWG: If IDNA fails but the string is ASCII and doesn't
+          // contain forbidden domain code points, use it as-is
+          // This allows hosts like `!"$&'()*+,-.;=_`{}~` which are valid per spec
+          // BUT: domains containing "xn--" labels must be valid punycode - reject if IDNA fails
+          let is_ascii = domain.iter().all(fn(c) { c.to_int() < 128 })
+          let has_punycode_label = domain.to_lower().contains("xn--")
+          if is_ascii &&
+            !contains_forbidden_domain_codepoint(domain) &&
+            !has_punycode_label {
+            domain
+          } else {
+            raise DomainToAscii
+          }
+        }
       }
       // Check for forbidden domain code points after IDNA conversion
       if contains_forbidden_domain_codepoint(ascii_domain) {
@@ -279,7 +304,14 @@ fn query_percent_encode_set(char : Char) -> Bool {
 /// Special query percent-encode set: query set + single quote (for http/https)
 fn special_query_percent_encode_set(char : Char) -> Bool {
   return char
-    is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '#' | '<' | '>' | '\'')
+    is ('\u{0000}'..='\u{001f}'
+    | '\u{007f}'..<_
+    | ' '
+    | '"'
+    | '#'
+    | '<'
+    | '>'
+    | '\'')
 }
 
 ///|

@@ -1,15 +1,15 @@
 ///|
 test "Url::parse basic" {
   let urls = [
-    "https://user:pass@example.com:8080/path/to/resource?query=value#fragment",
-    "http://example.com",
-    "ftp://ftp.example.com/pub/file.txt",
-    "file:///C:/path/to/file.txt",
+    "https://user:pass@example.com:8080/path/to/resource?query=value#fragment", "http://example.com",
+    "ftp://ftp.example.com/pub/file.txt", "file:///C:/path/to/file.txt",
   ]
   @json.inspect(
     urls.map(fn(s) { Url::parse(s).map(fn(u) { u.to_string() }) }),
     content=[
-      ["https://user:pass@example.com:8080/path/to/resource?query=value#fragment"],
+      [
+        "https://user:pass@example.com:8080/path/to/resource?query=value#fragment",
+      ],
       ["http://example.com/"],
       ["ftp://ftp.example.com/pub/file.txt"],
       ["file:///C:/path/to/file.txt"],
@@ -25,12 +25,10 @@ test "Url::parse special schemes" {
     ("http://example.com:8080/", "http://example.com:8080/"), // Non-default port kept
   ]
   @json.inspect(
-    test_cases.map(
-      fn(case) {
-        let (input, _) = case
-        Url::parse(input).map(fn(u) { u.to_string() })
-      },
-    ),
+    test_cases.map(fn(case) {
+      let (input, _) = case
+      Url::parse(input).map(fn(u) { u.to_string() })
+    }),
     content=[
       ["http://example.com/"],
       ["https://example.com/"],
@@ -41,10 +39,10 @@ test "Url::parse special schemes" {
 
 ///|
 test "Url getters" {
-  let url = Url::parse("https://user:pass@example.com:8080/path/to/resource?query=value#fragment")
-  guard url is Some(url) else {
-    fail("parse failed")
-  }
+  let url = Url::parse(
+    "https://user:pass@example.com:8080/path/to/resource?query=value#fragment",
+  )
+  guard url is Some(url) else { fail("parse failed") }
   inspect(url.protocol(), content="https:")
   inspect(url.get_username(), content="user")
   inspect(url.get_password(), content="pass")
@@ -60,9 +58,7 @@ test "Url getters" {
 ///|
 test "Url setters" {
   let url = Url::parse("http://example.com/path")
-  guard url is Some(url) else {
-    fail("parse failed")
-  }
+  guard url is Some(url) else { fail("parse failed") }
   url.set_protocol("https:")
   inspect(url.protocol(), content="https:")
   url.set_username("newuser")
@@ -83,24 +79,18 @@ test "Url setters" {
 test "Url::origin" {
   // Special schemes have origin
   let http = Url::parse("http://example.com:8080/")
-  guard http is Some(http) else {
-    fail("parse failed")
-  }
+  guard http is Some(http) else { fail("parse failed") }
   inspect(http.origin(), content="http://example.com:8080")
   // file: URLs have null origin
   let file = Url::parse("file:///path/to/file")
-  guard file is Some(file) else {
-    fail("parse failed")
-  }
+  guard file is Some(file) else { fail("parse failed") }
   inspect(file.origin(), content="null")
 }
 
 ///|
 test "Url with IPv6 host" {
   let url = Url::parse("http://[::1]:8080/path")
-  guard url is Some(url) else {
-    fail("parse failed")
-  }
+  guard url is Some(url) else { fail("parse failed") }
   inspect(url.hostname(), content="[::1]")
   inspect(url.get_port(), content="8080")
   inspect(url.to_string(), content="http://[::1]:8080/path")
@@ -109,13 +99,9 @@ test "Url with IPv6 host" {
 ///|
 test "Url relative resolution" {
   let base = Url::parse("https://example.com/a/b/c")
-  guard base is Some(base) else {
-    fail("base parse failed")
-  }
+  guard base is Some(base) else { fail("base parse failed") }
   // Test relative URL with base
-  let relative = Url::parse("../d", base=base)
-  guard relative is Some(relative) else {
-    fail("relative parse failed")
-  }
+  let relative = Url::parse("../d", base~)
+  guard relative is Some(relative) else { fail("relative parse failed") }
   inspect(relative.to_string(), content="https://example.com/a/d")
 }

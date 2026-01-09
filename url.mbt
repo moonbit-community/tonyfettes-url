@@ -27,10 +27,7 @@ fn Url::new() -> Url {
 
 ///|
 /// Parse a URL string, optionally with a base URL for relative resolution
-pub fn Url::parse(
-  input : String,
-  base? : Url,
-) -> Url? {
+pub fn Url::parse(input : String, base? : Url) -> Url? {
   let url = Url::new()
   let validation_errors : Array[ValidationError] = []
   Url::parse_basic(url, base?, input, validation_errors~)
@@ -67,27 +64,33 @@ pub fn Url::to_string(self : Url) -> String {
         None => ()
       }
     }
-    None => {
+    None =>
       // For file scheme without host, still include //
       if self.scheme == "file" {
         result.write_string("//")
       }
-    }
   }
   // Path
   match self.path {
     Opaque(path) => result.write_string(path)
-    Segments(segments) => {
+    Segments(segments) =>
       // Per WHATWG: If host is non-null, path is empty, and URL is special, append "/"
       if segments.is_empty() && self.host is Some(_) && self.is_special() {
         result.write_char('/')
       } else {
+        // Per WHATWG 4.5: If host is null, path is not opaque, path.length > 1,
+        // and path[0] is empty string, prepend "/." before the path
+        if self.host is None && segments.length() > 1 {
+          match segments[0] {
+            "" => result.write_string("/.")
+            _ => ()
+          }
+        }
         for segment in segments {
           result.write_char('/')
           result.write_string(segment)
         }
       }
-    }
   }
   // Query
   match self.query {
@@ -273,7 +276,7 @@ pub fn Url::set_host(self : Url, host_str : String) -> Unit {
     return // Cannot set host for opaque path URLs
   }
   // Parse host:port
-  let host = try Host::parse(host_str, is_opaque=!self.is_special()) catch {
+  let host = Host::parse(host_str, is_opaque=!self.is_special()) catch {
     _ => return // Invalid host
   }
   self.host = Some(host)
@@ -285,7 +288,7 @@ pub fn Url::set_hostname(self : Url, hostname : String) -> Unit {
   if self.path is Opaque(_) {
     return // Cannot set hostname for opaque path URLs
   }
-  let host = try Host::parse(hostname, is_opaque=!self.is_special()) catch {
+  let host = Host::parse(hostname, is_opaque=!self.is_special()) catch {
     _ => return // Invalid hostname
   }
   self.host = Some(host)
@@ -317,7 +320,8 @@ pub fn Url::set_port(self : Url, port_str : String) -> Unit {
   }
   let port_u16 = port_value.to_uint16()
   // Set to None if it's the default port
-  self.port = if default_port(self.scheme) is Some(default) && port_u16 == default {
+  self.port = if default_port(self.scheme) is Some(default) &&
+    port_u16 == default {
     None
   } else {
     Some(port_u16)
@@ -339,7 +343,8 @@ pub fn Url::set_pathname(self : Url, pathname : String) -> Unit {
       continue
     }
     match self.path {
-      Segments(segs) => segs.push(utf8_percent_encode(segment, path_percent_encode_set))
+      Segments(segs) =>
+        segs.push(utf8_percent_encode(segment, path_percent_encode_set))
       _ => ()
     }
   }
@@ -357,7 +362,9 @@ pub fn Url::set_search(self : Url, search : String) -> Unit {
     ['?', .. rest] => rest
     _ => search[:]
   }
-  self.query = Some(utf8_percent_encode(query.to_string(), query_percent_encode_set))
+  self.query = Some(
+    utf8_percent_encode(query.to_string(), query_percent_encode_set),
+  )
 }
 
 ///|
@@ -372,7 +379,9 @@ pub fn Url::set_hash(self : Url, hash : String) -> Unit {
     ['#', .. rest] => rest
     _ => hash[:]
   }
-  self.fragment = Some(utf8_percent_encode(fragment.to_string(), fragment_percent_encode_set))
+  self.fragment = Some(
+    utf8_percent_encode(fragment.to_string(), fragment_percent_encode_set),
+  )
 }
 
 ///|
@@ -390,6 +399,31 @@ fn remove_ascii_tab_or_newline(input : StringView) -> String {
     }
   }
   output.to_string()
+}
+
+///|
+/// Encode only the LAST trailing space as %20 for opaque paths before query/fragment
+fn encode_last_trailing_space(s : String) -> String {
+  // Check if the string ends with a space
+  let len = s.length()
+  if len == 0 {
+    return s
+  }
+  match s.get_char(len - 1) {
+    Some(' ') => {
+      // Replace only the last space with %20
+      let result = StringBuilder::new()
+      for i, c in s {
+        if i == len - 1 {
+          result.write_string("%20")
+        } else {
+          result.write_char(c)
+        }
+      }
+      result.to_string()
+    }
+    _ => s // No trailing space
+  }
 }
 
 ///|
@@ -411,11 +445,6 @@ fn trim_c0_control_or_space(input : StringView) -> StringView {
 ///|
 fn Url::is_special(url : Url) -> Bool {
   is_special_scheme(url.scheme)
-}
-
-///|
-fn is_ascii_hex_digit(c : Char) -> Bool {
-  c is ('0'..='9' | 'a'..='f' | 'A'..='F')
 }
 
 ///|
@@ -500,7 +529,7 @@ fn StringPointer::decrease(self : StringPointer) -> Unit {
     _ => {
       // Multiple chars, iterate to find the start of the last char
       let mut current_offset = before.start_offset()
-      for view = before; ; {
+      for view = before {
         match view {
           [_] => {
             self.pointer = current_offset
@@ -538,364 +567,406 @@ fn Url::parse_basic(
   //             2. Remove all ASCII tab or newline from entire input
   let input = trim_c0_control_or_space(input)
   let input = remove_ascii_tab_or_newline(input)
+  // Handle empty input per WHATWG spec
+  if input.is_empty() {
+    match base {
+      Some(base) => {
+        url.scheme = base.scheme
+        url.username = base.username
+        url.password = base.password
+        url.host = base.host
+        url.port = base.port
+        url.path = base.path.clone()
+        url.query = base.query
+        // fragment is NOT copied per WHATWG spec
+        return Some(url)
+      }
+      None => {
+        validation_errors.push(MissingSchemeNonRelativeUrl)
+        return None
+      }
+    }
+  }
   let pointer = StringPointer::new(input[:])
   // Outer loop for restart mechanism (WHATWG "start over")
   while true {
     for view = pointer.view(); view is [c, .. remaining]; view = pointer.next() {
-    match state {
-      SchemeStart =>
-        if c.is_ascii_alphabetic() {
-          buffer.write_char(c.to_ascii_lowercase())
-          state = Scheme
-        } else {
-          state = NoScheme
-          continue view // Re-process same character in NoScheme
-        }
-      Scheme =>
-        match c {
-          'a'..='z' | 'A'..='Z' | '0'..='9' | '+' | '-' | '.' =>
+      match state {
+        SchemeStart =>
+          if c.is_ascii_alphabetic() {
             buffer.write_char(c.to_ascii_lowercase())
-          ':' => {
-            url.scheme = buffer.to_string()
-            buffer.reset()
-            if url.scheme is "file" {
-              if remaining.has_prefix("//") {
-                validation_errors.push(SpecialSchemeMissingFollowingSolidus)
+            state = Scheme
+          } else {
+            state = NoScheme
+            continue view // Re-process same character in NoScheme
+          }
+        Scheme =>
+          match c {
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '+' | '-' | '.' =>
+              buffer.write_char(c.to_ascii_lowercase())
+            ':' => {
+              url.scheme = buffer.to_string()
+              buffer.reset()
+              if url.scheme is "file" {
+                if remaining.has_prefix("//") {
+                  validation_errors.push(SpecialSchemeMissingFollowingSolidus)
+                }
+                state = File
+              } else if is_special_scheme(url.scheme) &&
+                base is Some(base) &&
+                base.scheme == url.scheme {
+                guard is_special_scheme(base.scheme) else {
+                  abort("is_special_scheme(base.scheme) must be true")
+                }
+                state = SpecialRelativeOrAuthority
+              } else if is_special_scheme(url.scheme) {
+                state = SpecialAuthoritySlashes
+              } else if remaining is ['/', ..] {
+                state = PathOrAuthority
+                pointer.increase()
+              } else {
+                url.path = Opaque("")
+                state = OpaquePath
               }
-              state = File
-            } else if is_special_scheme(url.scheme) &&
-              base is Some(base) &&
-              base.scheme == url.scheme {
-              guard is_special_scheme(base.scheme) else {
-                abort("is_special_scheme(base.scheme) must be true")
-              }
-              state = SpecialRelativeOrAuthority
-            } else if is_special_scheme(url.scheme) {
-              state = SpecialAuthoritySlashes
-            } else if remaining is ['/', ..] {
-              state = PathOrAuthority
-              pointer.increase()
-            } else {
-              url.path = Opaque("")
-              state = OpaquePath
+            }
+            _ => {
+              buffer.reset()
+              state = NoScheme
+              pointer.start_over()
+              continue pointer.view()
             }
           }
-          _ => {
-            buffer.reset()
-            state = NoScheme
-            pointer.start_over()
-            continue pointer.view()
+        NoScheme =>
+          match base {
+            None => {
+              // No base URL means we need a scheme
+              validation_errors.push(MissingSchemeNonRelativeUrl)
+              return None
+            }
+            Some({ path: Opaque(_), .. }) if !(c is '#') => {
+              // Base has opaque path but input is not fragment
+              validation_errors.push(MissingSchemeNonRelativeUrl)
+              return None
+            }
+            Some({ path: Opaque(_), .. } as base) if c is '#' => {
+              url.scheme = base.scheme
+              url.path = base.path.clone()
+              url.query = base.query
+              url.fragment = Some("")
+              state = Fragment
+            }
+            Some({ scheme, .. }) if scheme != "file" => {
+              state = Relative
+              continue view // Re-process same character in Relative
+            }
+            _ => {
+              state = File
+              continue view // Re-process same character in File
+            }
           }
-        }
-      NoScheme =>
-        match base {
-          None | Some({ path: Opaque(_), .. }) if !(c is '#') => {
-            validation_errors.push(MissingSchemeNonRelativeUrl)
-            return None
-          }
-          Some({ path: Opaque(_), .. } as base) if c is '#' => {
-            url.scheme = base.scheme
-            url.path = base.path.clone()
-            url.query = base.query
-            url.fragment = Some("")
-            state = Fragment
-          }
-          Some({ scheme, .. }) if scheme != "file" => {
+        SpecialRelativeOrAuthority =>
+          if c is '/' && remaining.has_prefix("/") {
+            state = SpecialAuthorityIgnoreSlashes
+            pointer.increase()
+          } else {
+            validation_errors.push(SpecialSchemeMissingFollowingSolidus)
             state = Relative
             continue view // Re-process same character in Relative
           }
-          _ => {
-            state = File
-            continue view // Re-process same character in File
+        PathOrAuthority =>
+          if c is '/' {
+            state = Authority
+          } else {
+            state = Path
+            continue view // Re-process same character in Path
+          }
+        Relative => {
+          guard base is Some(base) else {
+            abort("base must be Some(base) in Relative state")
+          }
+          guard base.scheme != "file" else {
+            abort("base.scheme must not be \"file\" in Relative state")
+          }
+          url.scheme = base.scheme
+          if c is '/' {
+            state = RelativeSlash
+          } else if url.is_special() && c is '\\' {
+            validation_errors.push(InvalidReverseSolidus)
+            state = RelativeSlash
+          } else {
+            url.username = base.username
+            url.password = base.password
+            url.host = base.host
+            url.port = base.port
+            url.path = base.path.clone()
+            url.query = base.query
+            if c is '?' {
+              url.query = Some("")
+              state = Query
+            } else if c is '#' {
+              url.fragment = Some("")
+              state = Fragment
+            } else {
+              url.query = None
+              url.path.shorten(scheme=url.scheme)
+              state = Path
+              continue view // Re-process same character in Path
+            }
           }
         }
-      SpecialRelativeOrAuthority =>
-        if c is '/' && remaining.has_prefix("/") {
-          state = SpecialAuthorityIgnoreSlashes
-          pointer.increase()
-        } else {
-          validation_errors.push(SpecialSchemeMissingFollowingSolidus)
-          state = Relative
-          continue view // Re-process same character in Relative
-        }
-      PathOrAuthority =>
-        if c is '/' {
-          state = Authority
-        } else {
-          state = Path
-          continue view // Re-process same character in Path
-        }
-      Relative => {
-        guard base is Some(base) else {
-          abort("base must be Some(base) in Relative state")
-        }
-        guard base.scheme != "file" else {
-          abort("base.scheme must not be \"file\" in Relative state")
-        }
-        url.scheme = base.scheme
-        if c is '/' {
-          state = RelativeSlash
-        } else if url.is_special() && c is '\\' {
-          validation_errors.push(InvalidReverseSolidus)
-          state = RelativeSlash
-        } else {
-          url.username = base.username
-          url.password = base.password
-          url.host = base.host
-          url.port = base.port
-          url.path = base.path.clone()
-          url.query = base.query
-          if c is '?' {
-            url.query = Some("")
-            state = Query
-          } else if c is '#' {
-            url.fragment = Some("")
-            state = Fragment
+        RelativeSlash => {
+          guard base is Some(base) else {
+            abort("base must be Some(base) in RelativeSlash state")
+          }
+          if url.is_special() && c is ('/' | '\\') {
+            if c is '/' {
+              validation_errors.push(InvalidReverseSolidus)
+            }
+            state = SpecialAuthorityIgnoreSlashes
+          } else if c is '/' {
+            state = Authority
           } else {
-            url.query = None
-            url.path.shorten()
+            url.username = base.username
+            url.password = base.password
+            url.host = base.host
+            url.port = base.port
             state = Path
             continue view // Re-process same character in Path
           }
         }
-      }
-      RelativeSlash => {
-        guard base is Some(base) else {
-          abort("base must be Some(base) in RelativeSlash state")
-        }
-        if url.is_special() && c is ('/' | '\\') {
-          if c is '/' {
-            validation_errors.push(InvalidReverseSolidus)
+        SpecialAuthoritySlashes =>
+          if c is '/' && remaining.has_prefix("/") {
+            state = SpecialAuthorityIgnoreSlashes
+            pointer.increase()
+          } else {
+            validation_errors.push(SpecialSchemeMissingFollowingSolidus)
+            state = SpecialAuthorityIgnoreSlashes
+            continue view // Re-process same character
           }
-          state = SpecialAuthorityIgnoreSlashes
-        } else if c is '/' {
-          state = Authority
-        } else {
-          url.username = base.username
-          url.password = base.password
-          url.host = base.host
-          url.port = base.port
-          state = Path
-          continue view // Re-process same character in Path
-        }
-      }
-      SpecialAuthoritySlashes =>
-        if c is '/' && remaining.has_prefix("/") {
-          state = SpecialAuthorityIgnoreSlashes
-          pointer.increase()
-        } else {
-          validation_errors.push(SpecialSchemeMissingFollowingSolidus)
-          state = SpecialAuthorityIgnoreSlashes
-          continue view // Re-process same character
-        }
-      SpecialAuthorityIgnoreSlashes =>
-        if !(c is ('/' | '\\')) {
-          state = Authority
-          continue view // Re-process same character in Authority
-        } else {
-          validation_errors.push(SpecialSchemeMissingFollowingSolidus)
-        }
-      Authority =>
-        if c is '@' {
-          validation_errors.push(InvalidCredentials)
-          if at_sign_seen {
-            let prepend = "%40\{buffer.to_string()}"
+        SpecialAuthorityIgnoreSlashes =>
+          if !(c is ('/' | '\\')) {
+            state = Authority
+            continue view // Re-process same character in Authority
+          } else {
+            validation_errors.push(SpecialSchemeMissingFollowingSolidus)
+          }
+        Authority =>
+          if c is '@' {
+            validation_errors.push(InvalidCredentials)
+            if at_sign_seen {
+              let prepend = "%40\{buffer.to_string()}"
+              buffer.reset()
+              buffer.write_string(prepend)
+            }
+            at_sign_seen = true
+            for code_point in buffer.to_string() {
+              if code_point is ':' && !password_token_seen {
+                password_token_seen = true
+                continue
+              }
+              let encoded_code_points = utf8_percent_encode(
+                [code_point],
+                userinfo_percent_encode_set,
+              )
+              if password_token_seen {
+                url.password = "\{url.password}\{encoded_code_points}"
+              } else {
+                url.username = "\{url.username}\{encoded_code_points}"
+              }
+            }
             buffer.reset()
-            buffer.write_string(prepend)
-          }
-          at_sign_seen = true
-          for code_point in buffer.to_string() {
-            if code_point is ':' && !password_token_seen {
-              password_token_seen = true
-              continue
-            }
-            let encoded_code_points = utf8_percent_encode(
-              [code_point],
-              userinfo_percent_encode_set,
-            )
-            if password_token_seen {
-              url.password = "\{url.password}\{encoded_code_points}"
-            } else {
-              url.username = "\{url.username}\{encoded_code_points}"
-            }
-          }
-          buffer.reset()
-        } else if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
-          if at_sign_seen && buffer.is_empty() {
-            validation_errors.push(HostMissing)
-            return None
-          }
-          for _ in buffer.to_string() {
-            pointer.decrease()
-          }
-          pointer.decrease()
-          buffer.reset()
-          state = Host
-        } else {
-          buffer.write_char(c)
-        }
-      Host =>
-        if c is '[' {
-          inside_brackets = true
-          buffer.write_char(c)
-        } else if c is ']' {
-          inside_brackets = false
-          buffer.write_char(c)
-        } else if c is ':' && !inside_brackets {
-          if buffer.is_empty() {
-            validation_errors.push(HostMissing)
-            return None
-          }
-          let host = try Host::parse(buffer.to_string(), is_opaque=!url.is_special()) catch {
-            err => {
-              validation_errors.push(err)
+          } else if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
+            if at_sign_seen && buffer.is_empty() {
+              validation_errors.push(HostMissing)
               return None
             }
-          }
-          url.host = Some(host)
-          buffer.reset()
-          state = Port
-        } else if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
-          pointer.decrease()
-          if url.is_special() && buffer.is_empty() {
-            validation_errors.push(HostMissing)
-            return None
-          }
-          if buffer.is_empty() {
-            url.host = Some(Host::Opaque(""))
+            for _ in buffer.to_string() {
+              pointer.decrease()
+            }
+            pointer.decrease()
+            buffer.reset()
+            state = Host
           } else {
-            let host = try Host::parse(buffer.to_string(), is_opaque=!url.is_special()) catch {
+            buffer.write_char(c)
+          }
+        Host =>
+          if c is '[' {
+            inside_brackets = true
+            buffer.write_char(c)
+          } else if c is ']' {
+            inside_brackets = false
+            buffer.write_char(c)
+          } else if c is ':' && !inside_brackets {
+            if buffer.is_empty() {
+              validation_errors.push(HostMissing)
+              return None
+            }
+            let host = Host::parse(
+              buffer.to_string(),
+              is_opaque=!url.is_special(),
+            ) catch {
               err => {
                 validation_errors.push(err)
                 return None
               }
             }
             url.host = Some(host)
-          }
-          buffer.reset()
-          state = PathStart
-        } else {
-          buffer.write_char(c)
-        }
-      Port => {
-        if c.is_ascii_digit() {
-          buffer.write_char(c)
-        } else if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
-          if !buffer.is_empty() {
-            let port_str = buffer.to_string()
-            let mut port_value : UInt64 = 0
-            for ch in port_str {
-              port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
-              // Check overflow during accumulation to prevent UInt64 wraparound
-              if port_value > 65535 {
-                return None
-              }
-            }
-            // Check if port is default for the scheme
-            let port_u16 = port_value.to_uint16()
-            let is_default = match url.scheme {
-              "ftp" => port_u16 == 21
-              "http" | "ws" => port_u16 == 80
-              "https" | "wss" => port_u16 == 443
-              _ => false
-            }
-            url.port = if is_default { None } else { Some(port_u16) }
             buffer.reset()
-          }
-          state = PathStart
-          pointer.decrease()
-        } else {
-          // Invalid port character
-          return None
-        }
-      }
-      PathStart =>
-        if url.is_special() {
-          if c is '\\' {
-            validation_errors.push(InvalidReverseSolidus)
-          }
-          state = Path
-          if !(c is ('/' | '\\')) {
+            state = Port
+          } else if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
             pointer.decrease()
-          }
-        } else if c is '?' {
-          url.query = Some("")
-          state = Query
-        } else if c is '#' {
-          url.fragment = Some("")
-          state = Fragment
-        } else {
-          state = Path
-          if !(c is '/') {
-            pointer.decrease()
-          }
-        }
-      Path => {
-        if c is ('/' | '?'| '#') || (url.is_special() && c is '\\') {
-          if url.is_special() && c is '\\' {
-            validation_errors.push(InvalidReverseSolidus)
-          }
-          let buffer_str = buffer.to_string()
-          // Handle . and .. path segments
-          if buffer_str == ".." || buffer_str.to_lower() is ("..%2e" | ".%2e." | "%2e.." | "%2e%2e") {
-            url.path.shorten()
-            if !(c is ('/' | '\\')) {
-              match url.path {
-                Segments(segments) => segments.push("")
-                _ => ()
-              }
+            if url.is_special() && buffer.is_empty() {
+              validation_errors.push(HostMissing)
+              return None
             }
-          } else if buffer_str == "." || buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
-            if !(c is ('/' | '\\')) {
-              match url.path {
-                Segments(segments) => segments.push("")
-                _ => ()
-              }
-            }
-          } else {
-            if url.scheme == "file" && url.path is Segments(segments) && segments.is_empty() {
-              // Windows drive letter check
-              if buffer_str.length() == 2 {
-                match buffer_str {
-                  [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
-                    // Normalize Windows drive letter (preserve case, replace | with :)
-                    let normalized = "\{letter}:"
-                    match url.path {
-                      Segments(segments) => segments.push(normalized)
-                      _ => ()
-                    }
-                    buffer.reset()
-                    if c is '?' {
-                      url.query = Some("")
-                      state = Query
-                      continue pointer.next()
-                    } else if c is '#' {
-                      url.fragment = Some("")
-                      state = Fragment
-                      continue pointer.next()
-                    }
-                    continue pointer.next()
-                  }
-                  _ => ()
+            if buffer.is_empty() {
+              url.host = Some(Host::Opaque(""))
+            } else {
+              let host = Host::parse(
+                buffer.to_string(),
+                is_opaque=!url.is_special(),
+              ) catch {
+                err => {
+                  validation_errors.push(err)
+                  return None
                 }
               }
+              url.host = Some(host)
             }
-            match url.path {
-              Segments(segments) => segments.push(utf8_percent_encode(buffer_str, path_percent_encode_set))
-              Opaque(s) => url.path = Opaque(s + "/" + utf8_percent_encode(buffer_str, path_percent_encode_set))
-            }
+            buffer.reset()
+            state = PathStart
+          } else {
+            buffer.write_char(c)
           }
-          buffer.reset()
-          if c is '?' {
+        Port =>
+          if c.is_ascii_digit() {
+            buffer.write_char(c)
+          } else if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
+            if !buffer.is_empty() {
+              let port_str = buffer.to_string()
+              let mut port_value : UInt64 = 0
+              for ch in port_str {
+                port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
+                // Check overflow during accumulation to prevent UInt64 wraparound
+                if port_value > 65535 {
+                  return None
+                }
+              }
+              // Check if port is default for the scheme
+              let port_u16 = port_value.to_uint16()
+              let is_default = match url.scheme {
+                "ftp" => port_u16 == 21
+                "http" | "ws" => port_u16 == 80
+                "https" | "wss" => port_u16 == 443
+                _ => false
+              }
+              url.port = if is_default { None } else { Some(port_u16) }
+              buffer.reset()
+            }
+            state = PathStart
+            pointer.decrease()
+          } else {
+            // Invalid port character
+            return None
+          }
+        PathStart =>
+          if url.is_special() {
+            if c is '\\' {
+              validation_errors.push(InvalidReverseSolidus)
+            }
+            state = Path
+            if !(c is ('/' | '\\')) {
+              pointer.decrease()
+            }
+          } else if c is '?' {
             url.query = Some("")
             state = Query
           } else if c is '#' {
             url.fragment = Some("")
             state = Fragment
+          } else {
+            state = Path
+            if !(c is '/') {
+              pointer.decrease()
+            }
           }
-        } else {
-          // Percent-encode if needed
-          if c is '%' {
+        Path =>
+          if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
+            if url.is_special() && c is '\\' {
+              validation_errors.push(InvalidReverseSolidus)
+            }
+            let buffer_str = buffer.to_string()
+            // Handle . and .. path segments
+            if buffer_str == ".." ||
+              buffer_str.to_lower() is ("..%2e" | ".%2e." | "%2e.." | "%2e%2e") {
+              url.path.shorten(scheme=url.scheme)
+              if !(c is ('/' | '\\')) {
+                match url.path {
+                  Segments(segments) => segments.push("")
+                  _ => ()
+                }
+              }
+            } else if buffer_str == "." ||
+              buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
+              if !(c is ('/' | '\\')) {
+                match url.path {
+                  Segments(segments) => segments.push("")
+                  _ => ()
+                }
+              }
+            } else {
+              if url.scheme == "file" &&
+                url.path is Segments(segments) &&
+                segments.is_empty() {
+                // Windows drive letter check
+                if buffer_str.length() == 2 {
+                  match buffer_str {
+                    [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
+                      // Normalize Windows drive letter (preserve case, replace | with :)
+                      let normalized = "\{letter}:"
+                      match url.path {
+                        Segments(segments) => segments.push(normalized)
+                        _ => ()
+                      }
+                      buffer.reset()
+                      if c is '?' {
+                        url.query = Some("")
+                        state = Query
+                        continue pointer.next()
+                      } else if c is '#' {
+                        url.fragment = Some("")
+                        state = Fragment
+                        continue pointer.next()
+                      }
+                      continue pointer.next()
+                    }
+                    _ => ()
+                  }
+                }
+              }
+              match url.path {
+                Segments(segments) =>
+                  segments.push(
+                    utf8_percent_encode(buffer_str, path_percent_encode_set),
+                  )
+                Opaque(s) =>
+                  url.path = Opaque(
+                    s +
+                    "/" +
+                    utf8_percent_encode(buffer_str, path_percent_encode_set),
+                  )
+              }
+            }
+            buffer.reset()
+            if c is '?' {
+              url.query = Some("")
+              state = Query
+            } else if c is '#' {
+              url.fragment = Some("")
+              state = Fragment
+            }
+            // Percent-encode if needed
+          } else if c is '%' {
             // Per WHATWG: % followed by non-hex is a validation error but pass through literally
             // (% is not in the path percent-encode set so it shouldn't be encoded)
             buffer.write_char(c)
@@ -911,209 +982,225 @@ fn Url::parse_basic(
           } else {
             buffer.write_char(c)
           }
-        }
-      }
-      OpaquePath => {
-        if c is '?' {
-          url.query = Some("")
-          state = Query
-        } else if c is '#' {
-          url.fragment = Some("")
-          state = Fragment
-        } else {
-          match url.path {
-            Opaque(s) => {
-              if c0_control_percent_encode_set(c) {
-                let bytes = @encoding/utf8.encode([c])
-                let mut encoded = s
-                for byte in bytes {
-                  let b = byte.to_int()
-                  encoded = "\{encoded}%\{hex_digits[(b >> 4) & 0x0f]}\{hex_digits[b & 0x0f]}"
-                }
-                url.path = Opaque(encoded)
-              } else {
-                url.path = Opaque("\{s}\{c}")
-              }
-            }
-            _ => ()
-          }
-        }
-      }
-      Query => {
-        if c is '#' {
-          url.fragment = Some("")
-          state = Fragment
-        } else {
-          // Percent-encode query characters
-          // Use special query encode set for special URLs (encodes ')
-          let encode_set = if url.is_special() {
-            special_query_percent_encode_set
-          } else {
-            query_percent_encode_set
-          }
-          match url.query {
-            Some(q) => {
-              if c is '%' {
-                // Per WHATWG: % followed by non-hex is a validation error but pass through literally
-                // (% is not in the query percent-encode set so it shouldn't be encoded)
-                url.query = Some("\{q}\{c}")
-              } else if encode_set(c) {
-                let bytes = @encoding/utf8.encode([c])
-                let mut encoded = q
-                for byte in bytes {
-                  let b = byte.to_int()
-                  encoded = "\{encoded}%\{hex_digits[(b >> 4) & 0x0f]}\{hex_digits[b & 0x0f]}"
-                }
-                url.query = Some(encoded)
-              } else {
-                url.query = Some("\{q}\{c}")
-              }
-            }
-            None => ()
-          }
-        }
-      }
-      Fragment =>
-        match url.fragment {
-          Some(f) => {
-            if c is '%' {
-              // Per WHATWG: % followed by non-hex is a validation error but pass through literally
-              // (% is not in the fragment percent-encode set so it shouldn't be encoded)
-              url.fragment = Some("\{f}\{c}")
-            } else if fragment_percent_encode_set(c) {
-              let bytes = @encoding/utf8.encode([c])
-              let mut encoded = f
-              for byte in bytes {
-                let b = byte.to_int()
-                encoded = "\{encoded}%\{hex_digits[(b >> 4) & 0x0f]}\{hex_digits[b & 0x0f]}"
-              }
-              url.fragment = Some(encoded)
-            } else {
-              url.fragment = Some("\{f}\{c}")
-            }
-          }
-          None => ()
-        }
-      File => {
-        url.scheme = "file"
-        if c is ('/' | '\\') {
-          if c is '\\' {
-            validation_errors.push(InvalidReverseSolidus)
-          }
-          state = FileSlash
-        } else if base is Some(base) && base.scheme == "file" {
-          url.host = base.host
-          url.path = base.path.clone()
-          url.query = base.query
+        OpaquePath =>
           if c is '?' {
+            // Encode trailing spaces in opaque path before transitioning to Query
+            match url.path {
+              Opaque(s) => url.path = Opaque(encode_last_trailing_space(s))
+              _ => ()
+            }
             url.query = Some("")
             state = Query
           } else if c is '#' {
+            // Encode trailing spaces in opaque path before transitioning to Fragment
+            match url.path {
+              Opaque(s) => url.path = Opaque(encode_last_trailing_space(s))
+              _ => ()
+            }
             url.fragment = Some("")
             state = Fragment
           } else {
-            url.query = None
-            // Check for Windows drive letter
-            let starts_with_drive = match remaining {
-              [letter, ':' | '|', .. rest] if letter.is_ascii_alphabetic() =>
-                rest is ([] | ['/' | '\\' | '?' | '#', ..])
-              _ => false
-            }
-            if !starts_with_drive {
-              url.path.shorten()
-            } else {
-              url.path = Segments([])
-            }
-            state = Path
-            pointer.decrease()
-          }
-        } else {
-          state = Path
-          pointer.decrease()
-        }
-      }
-      FileSlash => {
-        url.scheme = "file"
-        if c is ('/' | '\\') {
-          if c is '\\' {
-            validation_errors.push(InvalidReverseSolidus)
-          }
-          state = FileHost
-        } else {
-          if base is Some(base) && base.scheme == "file" {
-            url.host = base.host
-            // Check for Windows drive letter
-            match base.path {
-              Segments([drive, ..]) if drive.length() == 2 => {
-                match drive {
-                  [letter, ':'] if letter.is_ascii_alphabetic() =>
-                    url.path = Segments([drive])
-                  _ => ()
+            match url.path {
+              Opaque(s) =>
+                if c0_control_percent_encode_set(c) {
+                  let bytes = @encoding/utf8.encode([c])
+                  let mut encoded = s
+                  for byte in bytes {
+                    let b = byte.to_int()
+                    encoded = "\{encoded}%\{hex_digits[(b >> 4) & 0x0f]}\{hex_digits[b & 0x0f]}"
+                  }
+                  url.path = Opaque(encoded)
+                } else {
+                  url.path = Opaque("\{s}\{c}")
                 }
-              }
               _ => ()
             }
           }
-          state = Path
-          pointer.decrease()
-        }
-      }
-      FileHost => {
-        url.scheme = "file"
-        if c is ('/' | '\\' | '?' | '#') {
-          pointer.decrease()
-          // Check for Windows drive letter
-          let buffer_str = buffer.to_string()
-          if buffer_str.length() == 2 {
-            match buffer_str {
-              [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
-                // It's a Windows drive letter, not a host
-                state = Path
-              }
-              _ => {
-                if buffer_str.is_empty() {
-                  url.host = Some(Host::Opaque(""))
-                  state = PathStart
+        Query =>
+          if c is '#' {
+            url.fragment = Some("")
+            state = Fragment
+          } else {
+            // Percent-encode query characters
+            // Use special query encode set for special URLs (encodes ')
+            let encode_set = if url.is_special() {
+              special_query_percent_encode_set
+            } else {
+              query_percent_encode_set
+            }
+            match url.query {
+              Some(q) =>
+                if c is '%' {
+                  // Per WHATWG: % followed by non-hex is a validation error but pass through literally
+                  // (% is not in the query percent-encode set so it shouldn't be encoded)
+                  url.query = Some("\{q}\{c}")
+                } else if encode_set(c) {
+                  let bytes = @encoding/utf8.encode([c])
+                  let mut encoded = q
+                  for byte in bytes {
+                    let b = byte.to_int()
+                    encoded = "\{encoded}%\{hex_digits[(b >> 4) & 0x0f]}\{hex_digits[b & 0x0f]}"
+                  }
+                  url.query = Some(encoded)
                 } else {
-                  let host = try Host::parse(buffer_str) catch {
-                    err => {
-                      validation_errors.push(err)
-                      return None
+                  url.query = Some("\{q}\{c}")
+                }
+              None => ()
+            }
+          }
+        Fragment =>
+          match url.fragment {
+            Some(f) =>
+              if c is '%' {
+                // Per WHATWG: % followed by non-hex is a validation error but pass through literally
+                // (% is not in the fragment percent-encode set so it shouldn't be encoded)
+                url.fragment = Some("\{f}\{c}")
+              } else if fragment_percent_encode_set(c) {
+                let bytes = @encoding/utf8.encode([c])
+                let mut encoded = f
+                for byte in bytes {
+                  let b = byte.to_int()
+                  encoded = "\{encoded}%\{hex_digits[(b >> 4) & 0x0f]}\{hex_digits[b & 0x0f]}"
+                }
+                url.fragment = Some(encoded)
+              } else {
+                url.fragment = Some("\{f}\{c}")
+              }
+            None => ()
+          }
+        File => {
+          url.scheme = "file"
+          if c is ('/' | '\\') {
+            if c is '\\' {
+              validation_errors.push(InvalidReverseSolidus)
+            }
+            state = FileSlash
+          } else if base is Some(base) && base.scheme == "file" {
+            url.host = base.host
+            url.path = base.path.clone()
+            url.query = base.query
+            if c is '?' {
+              url.query = Some("")
+              state = Query
+            } else if c is '#' {
+              url.fragment = Some("")
+              state = Fragment
+            } else {
+              url.query = None
+              // Check for Windows drive letter - c is the potential letter
+              let starts_with_drive = if c.is_ascii_alphabetic() {
+                match remaining {
+                  [':' | '|', .. rest] =>
+                    rest is ([] | ['/' | '\\' | '?' | '#', ..])
+                  _ => false
+                }
+              } else {
+                false
+              }
+              if starts_with_drive {
+                // Reset path for drive letter, don't shorten base path
+                url.path = Segments([])
+              } else {
+                url.path.shorten(scheme="file")
+              }
+              state = Path
+              continue view // Re-process same character in Path
+            }
+          } else {
+            // No base or base is not file scheme - set empty host for proper file:/// serialization
+            url.host = Some(Host::Opaque(""))
+            state = Path
+            continue view // Re-process same character in Path
+          }
+        }
+        FileSlash => {
+          url.scheme = "file"
+          if c is ('/' | '\\') {
+            if c is '\\' {
+              validation_errors.push(InvalidReverseSolidus)
+            }
+            state = FileHost
+          } else {
+            // Check if current input starts with a Windows drive letter
+            // e.g., for "/c:/foo", c='c', remaining=":/foo"
+            let input_has_drive = c.is_ascii_alphabetic() &&
+              remaining is [':' | '|', ..]
+            if base is Some(base) && base.scheme == "file" {
+              url.host = base.host
+              // Only copy base drive letter if input doesn't have its own
+              if !input_has_drive {
+                match base.path {
+                  Segments([drive, ..]) if drive.length() == 2 =>
+                    match drive {
+                      [letter, ':'] if letter.is_ascii_alphabetic() =>
+                        url.path = Segments([drive])
+                      _ => ()
                     }
-                  }
-                  if host is Domain("localhost") {
-                    url.host = Some(Host::Opaque(""))
-                  } else {
-                    url.host = Some(host)
-                  }
-                  buffer.reset()
-                  state = PathStart
+                  _ => ()
                 }
               }
-            }
-          } else if buffer_str.is_empty() {
-            url.host = Some(Host::Opaque(""))
-            state = PathStart
-          } else {
-            let host = try Host::parse(buffer_str) catch {
-              err => {
-                validation_errors.push(err)
-                return None
-              }
-            }
-            if host is Domain("localhost") {
-              url.host = Some(Host::Opaque(""))
             } else {
-              url.host = Some(host)
+              // No base - set empty host for proper file:/// serialization
+              url.host = Some(Host::Opaque(""))
             }
-            buffer.reset()
-            state = PathStart
+            state = Path
+            continue view // Re-process same character in Path
           }
-        } else {
-          buffer.write_char(c)
+        }
+        FileHost => {
+          url.scheme = "file"
+          if c is ('/' | '\\' | '?' | '#') {
+            pointer.decrease()
+            // Check for Windows drive letter
+            let buffer_str = buffer.to_string()
+            if buffer_str.length() == 2 {
+              match buffer_str {
+                [letter, ':' | '|'] if letter.is_ascii_alphabetic() =>
+                  // It's a Windows drive letter, not a host
+                  state = Path
+                _ =>
+                  if buffer_str.is_empty() {
+                    url.host = Some(Host::Opaque(""))
+                    state = PathStart
+                  } else {
+                    let host = Host::parse(buffer_str) catch {
+                      err => {
+                        validation_errors.push(err)
+                        return None
+                      }
+                    }
+                    if host is Domain("localhost") {
+                      url.host = Some(Host::Opaque(""))
+                    } else {
+                      url.host = Some(host)
+                    }
+                    buffer.reset()
+                    state = PathStart
+                  }
+              }
+            } else if buffer_str.is_empty() {
+              url.host = Some(Host::Opaque(""))
+              state = PathStart
+            } else {
+              let host = Host::parse(buffer_str) catch {
+                err => {
+                  validation_errors.push(err)
+                  return None
+                }
+              }
+              if host is Domain("localhost") {
+                url.host = Some(Host::Opaque(""))
+              } else {
+                url.host = Some(host)
+              }
+              buffer.reset()
+              state = PathStart
+            }
+          } else {
+            buffer.write_char(c)
+          }
         }
       }
-    }
     }
     // Handle EOF based on current state
     match state {
@@ -1121,7 +1208,7 @@ fn Url::parse_basic(
         validation_errors.push(MissingSchemeNonRelativeUrl)
         return None
       }
-      Scheme => {
+      Scheme =>
         // EOF in Scheme state without finding ':' - try as NoScheme if base exists
         if base is Some(_) {
           // Reset and re-parse in NoScheme state
@@ -1134,157 +1221,316 @@ fn Url::parse_basic(
           validation_errors.push(MissingSchemeNonRelativeUrl)
           return None
         }
-      }
-    Authority => {
-      // At EOF in Authority state - buffer contains host (no @ was seen)
-      // or remaining host after @
-      if at_sign_seen && buffer.is_empty() {
-        validation_errors.push(HostMissing)
-        return None
-      }
-      if !at_sign_seen {
-        // No @ was seen, so buffer is the host
-        if buffer.is_empty() {
+      Authority => {
+        // At EOF in Authority state - buffer contains host[:port] (no @ was seen)
+        // or remaining host[:port] after @
+        if at_sign_seen && buffer.is_empty() {
+          validation_errors.push(HostMissing)
+          return None
+        }
+        let buffer_str = buffer.to_string()
+        if buffer_str.is_empty() {
           if url.is_special() {
             validation_errors.push(HostMissing)
             return None
           }
           url.host = Some(Host::Opaque(""))
         } else {
-          let host = try Host::parse(buffer.to_string(), is_opaque=!url.is_special()) catch {
-            err => {
-              validation_errors.push(err)
-              return None
+          // Check for host:port pattern
+          // For IPv6 addresses like [2001::1]:80, the port separator is after the closing ]
+          let mut port_separator = -1
+          if buffer_str.has_prefix("[") {
+            // IPv6 address - look for : after ]
+            let mut found_bracket = false
+            for i, c in buffer_str {
+              if c == ']' {
+                found_bracket = true
+              } else if found_bracket && c == ':' {
+                port_separator = i
+                break
+              }
+            }
+          } else {
+            // Regular host - last colon is port separator
+            for i, c in buffer_str {
+              if c == ':' {
+                port_separator = i
+              }
             }
           }
-          url.host = Some(host)
-        }
-      } else {
-        // @ was seen but buffer still has content - this is the host part
-        if buffer.is_empty() {
-          if url.is_special() {
-            validation_errors.push(HostMissing)
-            return None
-          }
-          url.host = Some(Host::Opaque(""))
-        } else {
-          let host = try Host::parse(buffer.to_string(), is_opaque=!url.is_special()) catch {
-            err => {
-              validation_errors.push(err)
-              return None
-            }
-          }
-          url.host = Some(host)
-        }
-      }
-    }
-    Host => {
-      if url.is_special() && buffer.is_empty() {
-        validation_errors.push(HostMissing)
-        return None
-      }
-      if !buffer.is_empty() {
-        let host = try Host::parse(buffer.to_string(), is_opaque=!url.is_special()) catch {
-          err => {
-            validation_errors.push(err)
-            return None
-          }
-        }
-        url.host = Some(host)
-      } else if !url.is_special() {
-        url.host = Some(Host::Opaque(""))
-      }
-    }
-    Port => {
-      if !buffer.is_empty() {
-        let port_str = buffer.to_string()
-        let mut port_value : UInt64 = 0
-        for ch in port_str {
-          port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
-          // Check overflow during accumulation to prevent UInt64 wraparound
-          if port_value > 65535 {
-            return None
-          }
-        }
-        let port_u16 = port_value.to_uint16()
-        let is_default = match url.scheme {
-          "ftp" => port_u16 == 21
-          "http" | "ws" => port_u16 == 80
-          "https" | "wss" => port_u16 == 443
-          _ => false
-        }
-        url.port = if is_default { None } else { Some(port_u16) }
-      }
-    }
-    Path => {
-      let buffer_str = buffer.to_string()
-      if buffer_str == ".." || buffer_str.to_lower() is ("..%2e" | ".%2e." | "%2e.." | "%2e%2e") {
-        url.path.shorten()
-      } else if buffer_str == "." || buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
-        // Do nothing for single dot at EOF
-        ()
-      } else {
-        // Push segment (may be empty for trailing slash in non-special URLs)
-        match url.path {
-          Segments(segments) => segments.push(utf8_percent_encode(buffer_str, path_percent_encode_set))
-          Opaque(s) => url.path = Opaque(s + "/" + utf8_percent_encode(buffer_str, path_percent_encode_set))
-        }
-      }
-    }
-    FileHost => {
-      let buffer_str = buffer.to_string()
-      if buffer_str.is_empty() {
-        url.host = Some(Host::Opaque(""))
-      } else {
-        // Check for Windows drive letter
-        if buffer_str.length() == 2 {
-          match buffer_str {
-            [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
-              // Windows drive letter in host position (preserve case)
-              url.path = Segments(["\{letter}:"])
-            }
-            _ => {
-              let host = try Host::parse(buffer_str) catch {
+          let has_port = port_separator > 0
+          if has_port {
+            // Split at port separator
+            let last_colon = port_separator
+            if last_colon > 0 {
+              // Extract host and port using character iteration
+              let host_builder = StringBuilder::new()
+              let port_builder = StringBuilder::new()
+              let mut past_colon = false
+              let mut char_idx = 0
+              for c in buffer_str {
+                if char_idx == last_colon {
+                  past_colon = true
+                } else if past_colon {
+                  port_builder.write_char(c)
+                } else {
+                  host_builder.write_char(c)
+                }
+                char_idx = char_idx + 1
+              }
+              let host_part = host_builder.to_string()
+              let port_part = port_builder.to_string()
+              // Parse host
+              let host = Host::parse(host_part, is_opaque=!url.is_special()) catch {
                 err => {
                   validation_errors.push(err)
                   return None
                 }
               }
-              if host is Domain("localhost") {
-                url.host = Some(Host::Opaque(""))
-              } else {
-                url.host = Some(host)
+              url.host = Some(host)
+              // Parse port
+              if !port_part.is_empty() {
+                let mut port_value : UInt64 = 0
+                for ch in port_part {
+                  if !ch.is_ascii_digit() {
+                    return None // Invalid port character
+                  }
+                  port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
+                  if port_value > 65535 {
+                    return None
+                  }
+                }
+                let port_u16 = port_value.to_uint16()
+                let is_default = match url.scheme {
+                  "ftp" => port_u16 == 21
+                  "http" | "ws" => port_u16 == 80
+                  "https" | "wss" => port_u16 == 443
+                  _ => false
+                }
+                url.port = if is_default { None } else { Some(port_u16) }
+              }
+            } else {
+              // Colon at start means empty host - parse whole buffer as host
+              let host = Host::parse(buffer_str, is_opaque=!url.is_special()) catch {
+                err => {
+                  validation_errors.push(err)
+                  return None
+                }
+              }
+              url.host = Some(host)
+            }
+          } else {
+            // No port, just parse as host
+            let host = Host::parse(buffer_str, is_opaque=!url.is_special()) catch {
+              err => {
+                validation_errors.push(err)
+                return None
               }
             }
+            url.host = Some(host)
           }
-        } else {
-          let host = try Host::parse(buffer_str) catch {
+        }
+      }
+      Host => {
+        if url.is_special() && buffer.is_empty() {
+          validation_errors.push(HostMissing)
+          return None
+        }
+        if !buffer.is_empty() {
+          let host = Host::parse(
+            buffer.to_string(),
+            is_opaque=!url.is_special(),
+          ) catch {
             err => {
               validation_errors.push(err)
               return None
             }
           }
-          if host is Domain("localhost") {
-            url.host = Some(Host::Opaque(""))
-          } else {
-            url.host = Some(host)
+          url.host = Some(host)
+        } else if !url.is_special() {
+          url.host = Some(Host::Opaque(""))
+        }
+      }
+      Port =>
+        if !buffer.is_empty() {
+          let port_str = buffer.to_string()
+          let mut port_value : UInt64 = 0
+          for ch in port_str {
+            port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
+            // Check overflow during accumulation to prevent UInt64 wraparound
+            if port_value > 65535 {
+              return None
+            }
+          }
+          let port_u16 = port_value.to_uint16()
+          let is_default = match url.scheme {
+            "ftp" => port_u16 == 21
+            "http" | "ws" => port_u16 == 80
+            "https" | "wss" => port_u16 == 443
+            _ => false
+          }
+          url.port = if is_default { None } else { Some(port_u16) }
+        }
+      Path => {
+        let buffer_str = buffer.to_string()
+        if buffer_str == ".." ||
+          buffer_str.to_lower() is ("..%2e" | ".%2e." | "%2e.." | "%2e%2e") {
+          url.path.shorten(scheme=url.scheme)
+          // Push empty segment for trailing slash
+          match url.path {
+            Segments(segments) => segments.push("")
+            _ => ()
+          }
+        } else if buffer_str == "." ||
+          buffer_str.to_lower() is (".%2e" | "%2e." | "%2e") {
+          // Single dot at EOF - push empty segment for trailing slash
+          match url.path {
+            Segments(segments) => segments.push("")
+            _ => ()
+          }
+          // Check for Windows drive letter normalization at EOF (e.g., "C|" -> "C:")
+        } else if url.scheme == "file" &&
+          url.path is Segments(segments) &&
+          segments.is_empty() &&
+          buffer_str.length() == 2 {
+          match buffer_str {
+            [letter, ':' | '|'] if letter.is_ascii_alphabetic() =>
+              match url.path {
+                Segments(segments) => segments.push("\{letter}:")
+                _ => ()
+              }
+            _ =>
+              match url.path {
+                Segments(segments) =>
+                  segments.push(
+                    utf8_percent_encode(buffer_str, path_percent_encode_set),
+                  )
+                Opaque(s) =>
+                  url.path = Opaque(
+                    s +
+                    "/" +
+                    utf8_percent_encode(buffer_str, path_percent_encode_set),
+                  )
+              }
+          }
+        } else {
+          // Push segment (may be empty for trailing slash in non-special URLs)
+          match url.path {
+            Segments(segments) =>
+              segments.push(
+                utf8_percent_encode(buffer_str, path_percent_encode_set),
+              )
+            Opaque(s) =>
+              url.path = Opaque(
+                s +
+                "/" +
+                utf8_percent_encode(buffer_str, path_percent_encode_set),
+              )
           }
         }
       }
-    }
-    SpecialRelativeOrAuthority | Relative | RelativeSlash => {
-      // At EOF in these states, copy from base URL
-      guard base is Some(base) else {
-        abort("base must be Some(base) in Relative-like state at EOF")
+      FileHost => {
+        url.scheme = "file"
+        let buffer_str = buffer.to_string()
+        if buffer_str.is_empty() {
+          url.host = Some(Host::Opaque(""))
+        } else {
+          // Check for Windows drive letter using explicit char access
+          let is_drive_letter = buffer_str.length() == 2 &&
+            (match buffer_str.get_char(0) {
+              Some(c) => c.is_ascii_alphabetic()
+              None => false
+            }) &&
+            (match buffer_str.get_char(1) {
+              Some(':') | Some('|') => true
+              _ => false
+            })
+          if is_drive_letter {
+            // Windows drive letter in host position (normalize | to :)
+            url.host = Some(Host::Opaque(""))
+            let letter = buffer_str.get_char(0).unwrap()
+            url.path = Segments(["\{letter}:"])
+          } else {
+            let host = Host::parse(buffer_str) catch {
+              err => {
+                validation_errors.push(err)
+                return None
+              }
+            }
+            if host is Domain("localhost") {
+              url.host = Some(Host::Opaque(""))
+            } else {
+              url.host = Some(host)
+            }
+          }
+        }
       }
-      url.username = base.username
-      url.password = base.password
-      url.host = base.host
-      url.port = base.port
-      url.path = base.path.clone()
-      url.query = base.query
-    }
-    _ => ()
+      SpecialRelativeOrAuthority | Relative => {
+        // At EOF in these states, copy from base URL
+        guard base is Some(base) else {
+          abort("base must be Some(base) in Relative-like state at EOF")
+        }
+        url.username = base.username
+        url.password = base.password
+        url.host = base.host
+        url.port = base.port
+        url.path = base.path.clone()
+        url.query = base.query
+      }
+      RelativeSlash => {
+        // At EOF in RelativeSlash (saw "/" but nothing after), set root path
+        guard base is Some(base) else {
+          abort("base must be Some(base) in RelativeSlash state at EOF")
+        }
+        url.username = base.username
+        url.password = base.password
+        url.host = base.host
+        url.port = base.port
+        // Don't copy path - "/" means root path, so use empty segments (serializes as "/")
+        // Don't copy query either
+      }
+      File =>
+        // At EOF in File state (e.g., "file:" alone)
+        // Copy from base if available per WHATWG spec
+        if base is Some(base) && base.scheme == "file" {
+          url.host = base.host
+          url.path = base.path.clone()
+          url.query = base.query
+          // fragment is NOT copied per spec
+        } else {
+          url.host = Some(Host::Opaque(""))
+          // path defaults to Segments([]) which serializes as "/" for file URLs
+        }
+      FileSlash => {
+        // At EOF in FileSlash state (e.g., "/" with file base)
+        url.scheme = "file"
+        // Preserve host and Windows drive letter from base if present
+        if base is Some(base) && base.scheme == "file" {
+          url.host = base.host
+          match base.path {
+            Segments([drive, ..]) if drive.length() == 2 =>
+              match drive {
+                [letter, ':'] if letter.is_ascii_alphabetic() =>
+                  // Include empty segment for trailing slash: C: + / = C:/
+                  url.path = Segments([drive, ""])
+                _ => ()
+              }
+            _ => ()
+          }
+        } else {
+          url.host = Some(Host::Opaque(""))
+        }
+      }
+      PathOrAuthority =>
+        // At EOF in PathOrAuthority state - we consumed the '/' after scheme
+        // Set path to "/" for URLs like "foo:/"
+        url.path = Segments([""])
+      SpecialAuthoritySlashes | SpecialAuthorityIgnoreSlashes => {
+        // At EOF waiting for authority - special URLs require host
+        validation_errors.push(HostMissing)
+        return None
+      }
+      _ => ()
     }
     break // Exit outer loop after successful EOF handling
   }

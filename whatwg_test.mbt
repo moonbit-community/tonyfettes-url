@@ -34,9 +34,7 @@ test "WHATWG: basic URLs" {
 ///|
 test "WHATWG: relative URLs" {
   let base = Url::parse("http://example.com/a/b/c")
-  guard base is Some(base) else {
-    fail("base parse failed")
-  }
+  guard base is Some(base) else { fail("base parse failed") }
   let test_cases : Array[(String, String)] = [
     // (relative_input, expected_href)
     ("../d", "http://example.com/a/d"),
@@ -50,7 +48,7 @@ test "WHATWG: relative URLs" {
   ]
   for test_case in test_cases {
     let (input, expected) = test_case
-    let result = Url::parse(input, base=base)
+    let result = Url::parse(input, base~)
     match result {
       Some(url) => assert_eq(url.to_string(), expected)
       None => fail("Parse failed for: \{input}")
@@ -200,8 +198,8 @@ test "WHATWG: IDNA domains" {
 test "WHATWG: parse failures" {
   let failing_inputs = [
     "http://[::1", // Unclosed IPv6
-    "http://example^invalid/", // Invalid domain character will actually parse
-    "://no-scheme", // Missing scheme
+     "http://example^invalid/", // Invalid domain character will actually parse
+     "://no-scheme", // Missing scheme
   ]
   for input in failing_inputs {
     let result = Url::parse(input)
