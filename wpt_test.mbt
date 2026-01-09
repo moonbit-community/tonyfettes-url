@@ -17,7 +17,10 @@ test "WPT #0" {
 test "WPT #1" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://user:pass@foo:21/bar;par?b#c", base=base_url)
+  let result = @url.Url::parse(
+    "http://user:pass@foo:21/bar;par?b#c",
+    base=base_url,
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://user:pass@foo:21/bar;par?b#c")
 }
@@ -133,7 +136,10 @@ test "WPT #14" {
 test "WPT #15" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://f:00000000000000000000080/c", base=base_url)
+  let result = @url.Url::parse(
+    "http://f:00000000000000000000080/c",
+    base=base_url,
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://f/c")
 }
@@ -1295,7 +1301,9 @@ test "WPT #147" {
 
 ///|
 test "WPT #148" {
-  let result = @url.Url::parse("http://example.com/foo/%2e./%2e%2e/.%2e/%2e.bar")
+  let result = @url.Url::parse(
+    "http://example.com/foo/%2e./%2e%2e/.%2e/%2e.bar",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://example.com/%2e.bar")
 }
@@ -1430,7 +1438,10 @@ test "WPT #166" {
 test "WPT #167" {
   let result = @url.Url::parse("http://example.com/你好你好")
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "http://example.com/%E4%BD%A0%E5%A5%BD%E4%BD%A0%E5%A5%BD")
+  assert_eq(
+    url.to_string(),
+    "http://example.com/%E4%BD%A0%E5%A5%BD%E4%BD%A0%E5%A5%BD",
+  )
 }
 
 ///|
@@ -2250,7 +2261,9 @@ test "WPT #274" {
 
 ///|
 test "WPT #275" {
-  let result = @url.Url::parse("\u{0000}\u{001B}\u{0004}\u{0012} http://example.com/\u{001F} \r ")
+  let result = @url.Url::parse(
+    "\u{0000}\u{001B}\u{0004}\u{0012} http://example.com/\u{001F} \r ",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://example.com/")
 }
@@ -2434,7 +2447,10 @@ test "WPT #297" {
 test "WPT #298" {
   let base_url = @url.Url::parse("http://other.com/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://%ef%bc%85%ef%bc%94%ef%bc%91.com", base=base_url)
+  let result = @url.Url::parse(
+    "http://%ef%bc%85%ef%bc%94%ef%bc%91.com",
+    base=base_url,
+  )
   guard result is None else {
     fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
   }
@@ -2454,7 +2470,10 @@ test "WPT #299" {
 test "WPT #300" {
   let base_url = @url.Url::parse("http://other.com/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://%ef%bc%85%ef%bc%90%ef%bc%90.com", base=base_url)
+  let result = @url.Url::parse(
+    "http://%ef%bc%85%ef%bc%90%ef%bc%90.com",
+    base=base_url,
+  )
   guard result is None else {
     fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
   }
@@ -2517,7 +2536,10 @@ test "WPT #306" {
 test "WPT #307" {
   let base_url = @url.Url::parse("http://other.com/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://%30%78%63%30%2e%30%32%35%30.01", base=base_url)
+  let result = @url.Url::parse(
+    "http://%30%78%63%30%2e%30%32%35%30.01",
+    base=base_url,
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://192.168.0.1/")
 }
@@ -2526,7 +2548,10 @@ test "WPT #307" {
 test "WPT #308" {
   let base_url = @url.Url::parse("http://other.com/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://%30%78%63%30%2e%30%32%35%30.01%2e", base=base_url)
+  let result = @url.Url::parse(
+    "http://%30%78%63%30%2e%30%32%35%30.01%2e",
+    base=base_url,
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://192.168.0.1/")
 }
@@ -2545,7 +2570,10 @@ test "WPT #309" {
 test "WPT #310" {
   let base_url = @url.Url::parse("http://other.com/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://%3g%78%63%30%2e%30%32%35%30%2E.01", base=base_url)
+  let result = @url.Url::parse(
+    "http://%3g%78%63%30%2e%30%32%35%30%2E.01",
+    base=base_url,
+  )
   guard result is None else {
     fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
   }
@@ -2573,7 +2601,10 @@ test "WPT #312" {
 test "WPT #313" {
   let base_url = @url.Url::parse("http://other.com/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://０Ｘｃ０．０２５０．０１", base=base_url)
+  let result = @url.Url::parse(
+    "http://０Ｘｃ０．０２５０．０１",
+    base=base_url,
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://192.168.0.1/")
 }
@@ -3974,9 +4005,14 @@ test "WPT #482" {
 
 ///|
 test "WPT #483" {
-  let result = @url.Url::parse("sc://\u{0001}\u{0002}\u{0003}\u{0004}\u{0005}\u{0006}\u{0007}\u{0008}\u{000B}\u{000C}\u{000E}\u{000F}\u{0010}\u{0011}\u{0012}\u{0013}\u{0014}\u{0015}\u{0016}\u{0017}\u{0018}\u{0019}\u{001A}\u{001B}\u{001C}\u{001D}\u{001E}\u{001F}\u{007F}!\"$%&'()*+,-.;=_`{}~/")
+  let result = @url.Url::parse(
+    "sc://\u{0001}\u{0002}\u{0003}\u{0004}\u{0005}\u{0006}\u{0007}\u{0008}\u{000B}\u{000C}\u{000E}\u{000F}\u{0010}\u{0011}\u{0012}\u{0013}\u{0014}\u{0015}\u{0016}\u{0017}\u{0018}\u{0019}\u{001A}\u{001B}\u{001C}\u{001D}\u{001E}\u{001F}\u{007F}!\"$%&'()*+,-.;=_`{}~/",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "sc://%01%02%03%04%05%06%07%08%0B%0C%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D%1E%1F%7F!\"$%&'()*+,-.;=_`{}~/")
+  assert_eq(
+    url.to_string(),
+    "sc://%01%02%03%04%05%06%07%08%0B%0C%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D%1E%1F%7F!\"$%&'()*+,-.;=_`{}~/",
+  )
 }
 
 ///|
@@ -4048,7 +4084,9 @@ test "WPT #492" {
 
 ///|
 test "WPT #493" {
-  let result = @url.Url::parse("h\tt\nt\rp://h\to\ns\rt:9\t0\n0\r0/p\ta\nt\rh?q\tu\ne\rry#f\tr\na\rg")
+  let result = @url.Url::parse(
+    "h\tt\nt\rp://h\to\ns\rt:9\t0\n0\r0/p\ta\nt\rh?q\tu\ne\rry#f\tr\na\rg",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://host:9000/path?query#frag")
 }
@@ -4393,11 +4431,16 @@ test "WPT #533" {
 
 ///|
 test "WPT #534" {
-  let base_url = @url.Url::parse("file:///C:/Users/Domenic/Dropbox/GitHub/tmpvar/jsdom/test/level2/html/files/anchor.html")
+  let base_url = @url.Url::parse(
+    "file:///C:/Users/Domenic/Dropbox/GitHub/tmpvar/jsdom/test/level2/html/files/anchor.html",
+  )
   guard base_url is Some(base_url) else { return }
   let result = @url.Url::parse("pix/submit.gif", base=base_url)
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "file:///C:/Users/Domenic/Dropbox/GitHub/tmpvar/jsdom/test/level2/html/files/pix/submit.gif")
+  assert_eq(
+    url.to_string(),
+    "file:///C:/Users/Domenic/Dropbox/GitHub/tmpvar/jsdom/test/level2/html/files/pix/submit.gif",
+  )
 }
 
 ///|
@@ -5191,7 +5234,10 @@ test "WPT #629" {
 test "WPT #630" {
   let base_url = @url.Url::parse("http://example.org/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("http://f:340282366920938463463374607431768211537/c", base=base_url)
+  let result = @url.Url::parse(
+    "http://f:340282366920938463463374607431768211537/c",
+    base=base_url,
+  )
   guard result is None else {
     fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
   }
@@ -5300,7 +5346,9 @@ test "WPT #643" {
 
 ///|
 test "WPT #644" {
-  let result = @url.Url::parse("redis://foo:bar@somehost:6379/0?baz=bam&qux=baz")
+  let result = @url.Url::parse(
+    "redis://foo:bar@somehost:6379/0?baz=bam&qux=baz",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "redis://foo:bar@somehost:6379/0?baz=bam&qux=baz")
 }
@@ -5876,30 +5924,48 @@ test "WPT #719" {
 
 ///|
 test "WPT #720" {
-  let result = @url.Url::parse("non-special:cannot-be-a-base-url-\u{0000}\u{0001}\u{001F}\u{001E}~\u{007F}")
+  let result = @url.Url::parse(
+    "non-special:cannot-be-a-base-url-\u{0000}\u{0001}\u{001F}\u{001E}~\u{007F}",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "non-special:cannot-be-a-base-url-%00%01%1F%1E~%7F%C2%80")
+  assert_eq(
+    url.to_string(),
+    "non-special:cannot-be-a-base-url-%00%01%1F%1E~%7F%C2%80",
+  )
 }
 
 ///|
 test "WPT #721" {
-  let result = @url.Url::parse("non-special:cannot-be-a-base-url-!\"$%&'()*+,-.;<=>@[\\]^_`{|}~@/")
+  let result = @url.Url::parse(
+    "non-special:cannot-be-a-base-url-!\"$%&'()*+,-.;<=>@[\\]^_`{|}~@/",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "non-special:cannot-be-a-base-url-!\"$%&'()*+,-.;<=>@[\\]^_`{|}~@/")
+  assert_eq(
+    url.to_string(),
+    "non-special:cannot-be-a-base-url-!\"$%&'()*+,-.;<=>@[\\]^_`{|}~@/",
+  )
 }
 
 ///|
 test "WPT #722" {
-  let result = @url.Url::parse("https://www.example.com/path{\u{007F}path.html?query'\u{007F}=query#fragment<\u{007F}fragment")
+  let result = @url.Url::parse(
+    "https://www.example.com/path{\u{007F}path.html?query'\u{007F}=query#fragment<\u{007F}fragment",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "https://www.example.com/path%7B%7Fpath.html?query%27%7F=query#fragment%3C%7Ffragment")
+  assert_eq(
+    url.to_string(),
+    "https://www.example.com/path%7B%7Fpath.html?query%27%7F=query#fragment%3C%7Ffragment",
+  )
 }
 
 ///|
 test "WPT #723" {
   let base_url = @url.Url::parse("http://example.org")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("https://user:pass[\u{007F}@foo/bar", base=base_url)
+  let result = @url.Url::parse(
+    "https://user:pass[\u{007F}@foo/bar",
+    base=base_url,
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "https://user:pass%5B%7F@foo/bar")
 }
@@ -5908,28 +5974,42 @@ test "WPT #723" {
 test "WPT #724" {
   let result = @url.Url::parse("foo:// !\"$%&'()*+,-.;<=>@[\\]^_`{|}~@host/")
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "foo://%20!%22$%&'()*+,-.%3B%3C%3D%3E%40%5B%5C%5D%5E_%60%7B%7C%7D~@host/")
+  assert_eq(
+    url.to_string(),
+    "foo://%20!%22$%&'()*+,-.%3B%3C%3D%3E%40%5B%5C%5D%5E_%60%7B%7C%7D~@host/",
+  )
 }
 
 ///|
 test "WPT #725" {
   let result = @url.Url::parse("wss:// !\"$%&'()*+,-.;<=>@[]^_`{|}~@host/")
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "wss://%20!%22$%&'()*+,-.%3B%3C%3D%3E%40%5B%5D%5E_%60%7B%7C%7D~@host/")
+  assert_eq(
+    url.to_string(),
+    "wss://%20!%22$%&'()*+,-.%3B%3C%3D%3E%40%5B%5D%5E_%60%7B%7C%7D~@host/",
+  )
 }
 
 ///|
 test "WPT #726" {
-  let result = @url.Url::parse("foo://joe: !\"$%&'()*+,-.:;<=>@[\\]^_`{|}~@host/")
+  let result = @url.Url::parse(
+    "foo://joe: !\"$%&'()*+,-.:;<=>@[\\]^_`{|}~@host/",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "foo://joe:%20!%22$%&'()*+,-.%3A%3B%3C%3D%3E%40%5B%5C%5D%5E_%60%7B%7C%7D~@host/")
+  assert_eq(
+    url.to_string(),
+    "foo://joe:%20!%22$%&'()*+,-.%3A%3B%3C%3D%3E%40%5B%5C%5D%5E_%60%7B%7C%7D~@host/",
+  )
 }
 
 ///|
 test "WPT #727" {
   let result = @url.Url::parse("wss://joe: !\"$%&'()*+,-.:;<=>@[]^_`{|}~@host/")
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "wss://joe:%20!%22$%&'()*+,-.%3A%3B%3C%3D%3E%40%5B%5D%5E_%60%7B%7C%7D~@host/")
+  assert_eq(
+    url.to_string(),
+    "wss://joe:%20!%22$%&'()*+,-.%3A%3B%3C%3D%3E%40%5B%5D%5E_%60%7B%7C%7D~@host/",
+  )
 }
 
 ///|
@@ -5950,42 +6030,68 @@ test "WPT #729" {
 test "WPT #730" {
   let result = @url.Url::parse("foo://host/ !\"$%&'()*+,-./:;<=>@[\\]^_`{|}~")
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "foo://host/%20!%22$%&'()*+,-./:;%3C=%3E@[\\]%5E_%60%7B|%7D~")
+  assert_eq(
+    url.to_string(),
+    "foo://host/%20!%22$%&'()*+,-./:;%3C=%3E@[\\]%5E_%60%7B|%7D~",
+  )
 }
 
 ///|
 test "WPT #731" {
   let result = @url.Url::parse("wss://host/ !\"$%&'()*+,-./:;<=>@[\\]^_`{|}~")
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "wss://host/%20!%22$%&'()*+,-./:;%3C=%3E@[/]%5E_%60%7B|%7D~")
+  assert_eq(
+    url.to_string(),
+    "wss://host/%20!%22$%&'()*+,-./:;%3C=%3E@[/]%5E_%60%7B|%7D~",
+  )
 }
 
 ///|
 test "WPT #732" {
-  let result = @url.Url::parse("foo://host/dir/? !\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+  let result = @url.Url::parse(
+    "foo://host/dir/? !\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "foo://host/dir/?%20!%22$%&'()*+,-./:;%3C=%3E?@[\\]^_`{|}~")
+  assert_eq(
+    url.to_string(),
+    "foo://host/dir/?%20!%22$%&'()*+,-./:;%3C=%3E?@[\\]^_`{|}~",
+  )
 }
 
 ///|
 test "WPT #733" {
-  let result = @url.Url::parse("wss://host/dir/? !\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+  let result = @url.Url::parse(
+    "wss://host/dir/? !\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "wss://host/dir/?%20!%22$%&%27()*+,-./:;%3C=%3E?@[\\]^_`{|}~")
+  assert_eq(
+    url.to_string(),
+    "wss://host/dir/?%20!%22$%&%27()*+,-./:;%3C=%3E?@[\\]^_`{|}~",
+  )
 }
 
 ///|
 test "WPT #734" {
-  let result = @url.Url::parse("foo://host/dir/# !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+  let result = @url.Url::parse(
+    "foo://host/dir/# !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "foo://host/dir/#%20!%22#$%&'()*+,-./:;%3C=%3E?@[\\]^_%60{|}~")
+  assert_eq(
+    url.to_string(),
+    "foo://host/dir/#%20!%22#$%&'()*+,-./:;%3C=%3E?@[\\]^_%60{|}~",
+  )
 }
 
 ///|
 test "WPT #735" {
-  let result = @url.Url::parse("wss://host/dir/# !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+  let result = @url.Url::parse(
+    "wss://host/dir/# !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "wss://host/dir/#%20!%22#$%&'()*+,-./:;%3C=%3E?@[\\]^_%60{|}~")
+  assert_eq(
+    url.to_string(),
+    "wss://host/dir/#%20!%22#$%&'()*+,-./:;%3C=%3E?@[\\]^_%60{|}~",
+  )
 }
 
 ///|
@@ -6494,9 +6600,14 @@ test "WPT #799" {
 
 ///|
 test "WPT #800" {
-  let result = @url.Url::parse("javascript://example.com:8080/pathname?search#hash")
+  let result = @url.Url::parse(
+    "javascript://example.com:8080/pathname?search#hash",
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
-  assert_eq(url.to_string(), "javascript://example.com:8080/pathname?search#hash")
+  assert_eq(
+    url.to_string(),
+    "javascript://example.com:8080/pathname?search#hash",
+  )
 }
 
 ///|
@@ -6925,7 +7036,10 @@ test "WPT #856" {
 test "WPT #857" {
   let base_url = @url.Url::parse("http://example.org/")
   guard base_url is Some(base_url) else { return }
-  let result = @url.Url::parse("///example.org/../path/../../path", base=base_url)
+  let result = @url.Url::parse(
+    "///example.org/../path/../../path",
+    base=base_url,
+  )
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "http://example.org/path")
 }
@@ -7015,4 +7129,3 @@ test "WPT #868" {
   guard result is Some(url) else { fail("Expected success but parsing failed") }
   assert_eq(url.to_string(), "non-special://host/a\\b")
 }
-
