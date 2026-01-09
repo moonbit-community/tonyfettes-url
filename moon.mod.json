@@ -1,7 +1,9 @@
 {
   "name": "tonyfettes/url",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "deps": {
-    "tonyfettes/unicode": "0.1.1"
-  }
+    "tonyfettes/unicode": "0.2.2"
+  },
+  "repository": "https://github.com/moonbit-community/tonyfettes-url",
+  "readme": "README.md"
 }
