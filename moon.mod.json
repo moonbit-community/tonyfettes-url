@@ -2,11 +2,13 @@
   "name": "tonyfettes/url",
   "version": "0.1.1",
   "deps": {
-    "tonyfettes/unicode": "0.2.2"
+    "tonyfettes/unicode": "0.3.0"
   },
-  "repository": "https://github.com/moonbit-community/tonyfettes-url",
   "readme": "README.md",
+  "repository": "https://github.com/moonbit-community/tonyfettes-url",
   "license": "Apache-2.0",
-  "description": "WHATWG URL Standard parser implementation in MoonBit",
-  "keywords": ["url"]
+  "keywords": [
+    "url"
+  ],
+  "description": "WHATWG URL Standard parser implementation in MoonBit"
 }
