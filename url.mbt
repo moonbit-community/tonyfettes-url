@@ -1,4 +1,6 @@
 ///|
+/// Represents a parsed URL per the WHATWG URL Standard.
+/// Contains scheme, credentials (username/password), host, port, path, query, and fragment.
 pub struct Url {
   mut scheme : String
   mut username : String
@@ -112,6 +114,7 @@ pub fn Url::to_string(self : Url) -> String {
 }
 
 ///|
+/// Get the full URL as a string (alias for to_string)
 pub fn Url::href(self : Url) -> String {
   self.to_string()
 }
@@ -385,6 +388,7 @@ pub fn Url::set_hash(self : Url, hash : String) -> Unit {
 }
 
 ///|
+/// Implement Show trait for Url, outputting the serialized URL string
 pub impl Show for Url with output(self : Url, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }

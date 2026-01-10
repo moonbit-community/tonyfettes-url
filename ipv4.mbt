@@ -1,7 +1,9 @@
 ///|
+/// Represents an IPv4 address as a 32-bit unsigned integer
 struct IPv4(UInt)
 
 ///|
+/// Serialize IPv4 address to dotted-decimal notation (e.g., "192.168.1.1")
 pub fn IPv4::to_string(self : IPv4) -> String {
   let n = self.0
   let b0 = (n >> 24) & 0xFF
@@ -12,11 +14,13 @@ pub fn IPv4::to_string(self : IPv4) -> String {
 }
 
 ///|
+/// Implement Show trait for IPv4, outputting dotted-decimal notation
 pub impl Show for IPv4 with output(self : IPv4, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
 ///|
+/// Implement ToJson trait for IPv4, outputting as array of 4 bytes
 pub impl ToJson for IPv4 with to_json(self : IPv4) -> Json {
   let b0 = ((self.0 >> 24) & 0xFF).to_byte()
   let b1 = ((self.0 >> 16) & 0xFF).to_byte()
@@ -26,6 +30,8 @@ pub impl ToJson for IPv4 with to_json(self : IPv4) -> Json {
 }
 
 ///|
+/// Parse an IPv4 address per WHATWG URL spec.
+/// Supports decimal, octal (0-prefix), and hexadecimal (0x-prefix) notation.
 pub fn IPv4::parse(input : StringView) -> IPv4 raise ValidationError {
   let parts = input.split(".").collect()
   let parts = if parts is [.. parts, ""] { parts } else { parts }

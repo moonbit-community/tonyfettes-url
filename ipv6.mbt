@@ -1,4 +1,5 @@
 ///|
+/// Represents an IPv6 address as 8 16-bit pieces
 struct IPv6(FixedArray[UInt16])
 
 ///|
@@ -73,16 +74,20 @@ pub fn IPv6::to_string(self : IPv6) -> String {
 }
 
 ///|
+/// Implement Show trait for IPv6, outputting compressed colon notation
 pub impl Show for IPv6 with output(self : IPv6, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
 ///|
+/// Implement ToJson trait for IPv6, outputting as array of 8 16-bit values
 pub impl ToJson for IPv6 with to_json(self : IPv6) -> Json {
   self.0.to_json()
 }
 
 ///|
+/// Parse an IPv6 address per WHATWG URL spec.
+/// Supports :: compression and embedded IPv4 addresses.
 pub fn IPv6::parse(input : StringView) -> IPv6 raise ValidationError {
   // 1. Let `address` be a new IPv6 address whose pieces are all 0.
   let address : FixedArray[UInt16] = FixedArray::make(8, 0)

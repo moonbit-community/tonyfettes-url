@@ -1,4 +1,6 @@
 ///|
+/// Represents a URL host per the WHATWG URL Standard.
+/// Can be a domain name, IPv4 address, IPv6 address, or opaque string.
 pub enum Host {
   Domain(String)
   IPv4(IPv4)
@@ -18,6 +20,7 @@ pub fn Host::to_string(self : Host) -> String {
 }
 
 ///|
+/// Implement Show trait for Host, outputting the serialized host string
 pub impl Show for Host with output(self : Host, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
@@ -37,6 +40,8 @@ pub fn Host::to_unicode(self : Host) -> String {
 }
 
 ///|
+/// URL parsing validation errors per the WHATWG URL Standard.
+/// Each variant represents a specific parsing failure condition.
 suberror ValidationError {
   DomainToAscii
   HostInvalidCodePoint
@@ -135,6 +140,8 @@ fn contains_forbidden_domain_codepoint(s : String) -> Bool {
 }
 
 ///|
+/// Parse a host string per WHATWG URL spec.
+/// Handles IPv4, IPv6 (in brackets), domain names with IDNA/Punycode, and opaque hosts.
 pub fn Host::parse(
   input : StringView,
   is_opaque? : Bool = false,
