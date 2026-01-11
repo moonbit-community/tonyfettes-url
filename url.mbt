@@ -127,19 +127,19 @@ pub fn Url::protocol(self : Url) -> String {
 
 ///|
 /// Get the username
-pub fn Url::get_username(self : Url) -> String {
+pub fn Url::username(self : Url) -> String {
   self.username
 }
 
 ///|
 /// Get the password
-pub fn Url::get_password(self : Url) -> String {
+pub fn Url::password(self : Url) -> String {
   self.password
 }
 
 ///|
 /// Get the host (hostname + ":" + port if port is present)
-pub fn Url::get_host(self : Url) -> String {
+pub fn Url::host(self : Url) -> String {
   match self.host {
     Some(host) => {
       let hostname = host.to_string()
@@ -163,7 +163,7 @@ pub fn Url::hostname(self : Url) -> String {
 
 ///|
 /// Get the port as a string (empty string if no port or default port)
-pub fn Url::get_port(self : Url) -> String {
+pub fn Url::port(self : Url) -> String {
   match self.port {
     Some(port) => port.to_string()
     None => ""
