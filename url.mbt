@@ -227,6 +227,24 @@ fn default_port(scheme : StringView) -> UInt16? {
 }
 
 ///|
+/// Set the full URL (re-parse and replace all components)
+pub fn Url::set_href(self : Url, href : String) -> Unit {
+  match Url::parse(href) {
+    Some(parsed) => {
+      self.scheme = parsed.scheme
+      self.username = parsed.username
+      self.password = parsed.password
+      self.host = parsed.host
+      self.port = parsed.port
+      self.path = parsed.path
+      self.query = parsed.query
+      self.fragment = parsed.fragment
+    }
+    None => ()
+  }
+}
+
+///|
 /// Set the protocol (scheme)
 pub fn Url::set_protocol(self : Url, protocol : String) -> Unit {
   // Parse the scheme from protocol string (strip trailing ":" if present)
