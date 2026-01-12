@@ -247,22 +247,51 @@ pub fn Url::set_href(self : Url, href : String) -> Unit {
 ///|
 /// Set the protocol (scheme)
 pub fn Url::set_protocol(self : Url, protocol : String) -> Unit {
-  // Parse the scheme from protocol string (strip trailing ":" if present)
-  let scheme = match protocol[:] {
-    [.. scheme, ':'] => scheme.to_string()
-    _ => protocol
+  let cleaned = remove_ascii_tab_or_newline(protocol[:])
+  let parts = cleaned.split(":").collect()
+  let scheme_part = if parts.is_empty() { "" } else { parts[0].to_string() }
+  if scheme_part.is_empty() {
+    return
   }
-  // Validate scheme: must start with ASCII letter, followed by ASCII alphanumeric, +, -, or .
-  match scheme[:] {
+  if contains_c0_or_space(scheme_part[:]) {
+    return
+  }
+  match scheme_part[:] {
     [c, .. rest] if c.is_ascii_alphabetic() => {
       for ch in rest {
         if !(is_ascii_alphanumeric(ch) || ch is ('+' | '-' | '.')) {
-          return // Invalid scheme, don't update
+          return
         }
       }
-      self.scheme = scheme.to_lower()
     }
-    _ => () // Invalid scheme, don't update
+    _ => return
+  }
+  let new_scheme = scheme_part.to_lower()
+  if new_scheme == self.scheme {
+    return
+  }
+  let old_special = self.is_special()
+  let new_special = is_special_scheme(new_scheme)
+  if old_special != new_special {
+    return
+  }
+  if new_scheme == "file" {
+    if !self.username.is_empty() || !self.password.is_empty() || self.port is Some(_) {
+      return
+    }
+  }
+  if self.scheme == "file" && new_scheme != "file" {
+    if has_empty_host(self.host) {
+      return
+    }
+  }
+  self.scheme = new_scheme
+  match self.port {
+    Some(port) =>
+      if default_port(self.scheme) is Some(default) && port == default {
+        self.port = None
+      }
+    None => ()
   }
 }
 
@@ -296,11 +325,116 @@ pub fn Url::set_host(self : Url, host_str : String) -> Unit {
   if self.path is Opaque(_) {
     return // Cannot set host for opaque path URLs
   }
-  // Parse host:port
-  let host = Host::parse(host_str, is_opaque=!self.is_special()) catch {
-    _ => return // Invalid host
+  let cleaned = remove_ascii_tab_or_newline(host_str[:])
+  let host_input = take_until_host_delimiter(cleaned[:], self.is_special())
+  if host_input.is_empty() {
+    if self.is_special() && self.scheme != "file" {
+      return
+    }
+    if !self.username.is_empty() || !self.password.is_empty() || self.port is Some(_) {
+      return
+    }
+    self.host = Some(Host::Opaque(""))
+    if self.scheme == "file" {
+      self.port = None
+    }
+    return
   }
-  self.host = Some(host)
+  let mut host_part = ""
+  let mut port_part : String? = None
+  let mut port_specified = false
+  match host_input[:] {
+    ['[', ..] => {
+      let host_builder = StringBuilder::new()
+      let port_builder = StringBuilder::new()
+      let mut in_ipv6 = false
+      let mut after_bracket = false
+      let mut invalid = false
+      for c in host_input[:] {
+        if in_ipv6 {
+          host_builder.write_char(c)
+          if c is ']' {
+            in_ipv6 = false
+            after_bracket = true
+          }
+          continue
+        }
+        if after_bracket {
+          if c is ':' {
+            port_specified = true
+            after_bracket = false
+          } else {
+            invalid = true
+            break
+          }
+          continue
+        }
+        if host_builder.is_empty() && c is '[' {
+          in_ipv6 = true
+          host_builder.write_char(c)
+          continue
+        }
+        if port_specified {
+          port_builder.write_char(c)
+        } else if c is ':' {
+          port_specified = true
+        } else {
+          host_builder.write_char(c)
+        }
+      }
+      if in_ipv6 || invalid {
+        return
+      }
+      host_part = host_builder.to_string()
+      if port_specified {
+        port_part = Some(port_builder.to_string())
+      }
+    }
+    _ => {
+      let parts = host_input.split(":").collect()
+      if parts.length() > 2 {
+        return
+      }
+      if parts.length() == 2 {
+        port_specified = true
+        host_part = parts[0].to_string()
+        port_part = Some(parts[1].to_string())
+      } else {
+        host_part = host_input
+      }
+    }
+  }
+  if host_part.is_empty() && port_specified {
+    return
+  }
+  if self.scheme == "file" && port_specified {
+    return
+  }
+  let host = Host::parse(host_part[:], is_opaque=!self.is_special()) catch {
+    _ => return
+  }
+  if self.scheme == "file" && host is Domain("localhost") {
+    self.host = Some(Host::Opaque(""))
+  } else {
+    self.host = Some(host)
+  }
+  if port_specified {
+    match port_part {
+      Some(port_str) =>
+        match parse_port_prefix(port_str[:]) {
+          Empty => ()
+          Overflow => self.port = None
+          Value(port) =>
+            self.port = if default_port(self.scheme) is Some(default) &&
+              port == default {
+              None
+            } else {
+              Some(port)
+            }
+        }
+      None => ()
+    }
+  }
 }
 
 ///|
@@ -309,16 +443,35 @@ pub fn Url::set_hostname(self : Url, hostname : String) -> Unit {
   if self.path is Opaque(_) {
     return // Cannot set hostname for opaque path URLs
   }
-  let host = Host::parse(hostname, is_opaque=!self.is_special()) catch {
-    _ => return // Invalid hostname
+  let cleaned = remove_ascii_tab_or_newline(hostname[:])
+  let host_input = take_until_host_delimiter(cleaned[:], self.is_special())
+  if host_input.is_empty() {
+    if self.is_special() && self.scheme != "file" {
+      return
+    }
+    if !self.username.is_empty() || !self.password.is_empty() || self.port is Some(_) {
+      return
+    }
+    self.host = Some(Host::Opaque(""))
+    if self.scheme == "file" {
+      self.port = None
+    }
+    return
   }
-  self.host = Some(host)
+  let host = Host::parse(host_input[:], is_opaque=!self.is_special()) catch {
+    _ => return
+  }
+  if self.scheme == "file" && host is Domain("localhost") {
+    self.host = Some(Host::Opaque(""))
+  } else {
+    self.host = Some(host)
+  }
 }
 
 ///|
 /// Set the port
 pub fn Url::set_port(self : Url, port_str : String) -> Unit {
-  if self.host is None || self.path is Opaque(_) {
+  if has_empty_host(self.host) || self.path is Opaque(_) {
     return
   }
   if self.scheme == "file" {
@@ -328,24 +481,21 @@ pub fn Url::set_port(self : Url, port_str : String) -> Unit {
     self.port = None
     return
   }
-  // Parse port number
-  let mut port_value : UInt64 = 0
-  for ch in port_str {
-    if !ch.is_ascii_digit() {
-      return // Invalid port
-    }
-    port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
-    if port_value > 65535 {
-      return // Port out of range
-    }
+  let cleaned = remove_ascii_tab_or_newline(port_str[:])
+  let port_input = take_until_host_delimiter(cleaned[:], self.is_special())
+  if port_input.is_empty() {
+    return
   }
-  let port_u16 = port_value.to_uint16()
-  // Set to None if it's the default port
-  self.port = if default_port(self.scheme) is Some(default) &&
-    port_u16 == default {
-    None
-  } else {
-    Some(port_u16)
+  match parse_port_prefix(port_input[:]) {
+    Empty => ()
+    Overflow => ()
+    Value(port) =>
+      self.port = if default_port(self.scheme) is Some(default) &&
+        port == default {
+        None
+      } else {
+        Some(port)
+      }
   }
 }
 
@@ -355,17 +505,114 @@ pub fn Url::set_pathname(self : Url, pathname : String) -> Unit {
   if self.path is Opaque(_) {
     return // Cannot set pathname for opaque path URLs
   }
-  // Clear and re-parse path
-  self.path = Segments([])
-  // Simple path parsing: split by "/" and add segments
-  let segments = pathname.split("/").collect()
-  for segment in segments {
-    if segment.is_empty() {
-      continue
+  let cleaned = remove_ascii_tab_or_newline(pathname[:])
+  if cleaned.is_empty() {
+    if self.is_special() || self.host is None {
+      self.path = Segments([""])
+    } else {
+      self.path = Segments([])
     }
+    return
+  }
+  self.path = Segments([])
+  let buffer = StringBuilder::new()
+  let mut view = cleaned[:]
+  if self.is_special() {
+    match view {
+      ['/' | '\\', .. rest] => view = rest
+      _ => ()
+    }
+  } else {
+    match view {
+      ['/', .. rest] => view = rest
+      _ => ()
+    }
+  }
+  for c in view {
+    if c is '/' || (self.is_special() && c is '\\') {
+      let buffer_str = buffer.to_string()
+      if is_double_dot_path_segment(buffer_str) {
+        self.path.shorten(scheme=self.scheme)
+      } else if is_single_dot_path_segment(buffer_str) {
+        ()
+      } else {
+        if self.scheme == "file" &&
+          self.path is Segments(segments) &&
+          segments.is_empty() &&
+          buffer_str.length() == 2 {
+          match buffer_str {
+            [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
+              let normalized = "\{letter}:"
+              match self.path {
+                Segments(segments) => segments.push(normalized)
+                _ => ()
+              }
+              buffer.reset()
+              continue
+            }
+            _ => ()
+          }
+        }
+        match self.path {
+          Segments(segments) =>
+            segments.push(
+              utf8_percent_encode(buffer_str, path_percent_encode_set),
+            )
+          _ => ()
+        }
+      }
+      buffer.reset()
+    } else if c is '%' {
+      buffer.write_char(c)
+    } else if path_percent_encode_set(c) {
+      let bytes = @encoding/utf8.encode([c])
+      for byte in bytes {
+        buffer.write_char('%')
+        let b = byte.to_int()
+        buffer.write_char(hex_digits[(b >> 4) & 0x0f])
+        buffer.write_char(hex_digits[b & 0x0f])
+      }
+    } else {
+      buffer.write_char(c)
+    }
+  }
+  let buffer_str = buffer.to_string()
+  if is_double_dot_path_segment(buffer_str) {
+    self.path.shorten(scheme=self.scheme)
     match self.path {
-      Segments(segs) =>
-        segs.push(utf8_percent_encode(segment, path_percent_encode_set))
+      Segments(segments) => segments.push("")
+      _ => ()
+    }
+  } else if is_single_dot_path_segment(buffer_str) {
+    match self.path {
+      Segments(segments) => segments.push("")
+      _ => ()
+    }
+  } else if self.scheme == "file" &&
+    self.path is Segments(segments) &&
+    segments.is_empty() &&
+    buffer_str.length() == 2 {
+    match buffer_str {
+      [letter, ':' | '|'] if letter.is_ascii_alphabetic() =>
+        match self.path {
+          Segments(segments) => segments.push("\{letter}:")
+          _ => ()
+        }
+      _ =>
+        match self.path {
+          Segments(segments) =>
+            segments.push(
+              utf8_percent_encode(buffer_str, path_percent_encode_set),
+            )
+          _ => ()
+        }
+    }
+  } else {
+    match self.path {
+      Segments(segments) =>
+        segments.push(
+          utf8_percent_encode(buffer_str, path_percent_encode_set),
+        )
       _ => ()
     }
   }
@@ -374,31 +621,36 @@ pub fn Url::set_pathname(self : Url, pathname : String) -> Unit {
 ///|
 /// Set the search (query string)
 pub fn Url::set_search(self : Url, search : String) -> Unit {
-  if search.is_empty() {
+  let cleaned = remove_ascii_tab_or_newline(search[:])
+  if cleaned.is_empty() {
     self.query = None
     return
   }
   // Strip leading "?" if present
-  let query = match search[:] {
+  let query = match cleaned[:] {
     ['?', .. rest] => rest
-    _ => search[:]
+    _ => cleaned[:]
   }
-  self.query = Some(
-    utf8_percent_encode(query.to_string(), query_percent_encode_set),
-  )
+  let encode_set = if self.is_special() {
+    special_query_percent_encode_set
+  } else {
+    query_percent_encode_set
+  }
+  self.query = Some(utf8_percent_encode(query.to_string(), encode_set))
 }
 
 ///|
 /// Set the hash (fragment)
 pub fn Url::set_hash(self : Url, hash : String) -> Unit {
-  if hash.is_empty() {
+  let cleaned = remove_ascii_tab_or_newline(hash[:])
+  if cleaned.is_empty() {
     self.fragment = None
     return
   }
   // Strip leading "#" if present
-  let fragment = match hash[:] {
+  let fragment = match cleaned[:] {
     ['#', .. rest] => rest
-    _ => hash[:]
+    _ => cleaned[:]
   }
   self.fragment = Some(
     utf8_percent_encode(fragment.to_string(), fragment_percent_encode_set),
@@ -421,6 +673,64 @@ fn remove_ascii_tab_or_newline(input : StringView) -> String {
     }
   }
   output.to_string()
+}
+
+///|
+fn contains_c0_or_space(input : StringView) -> Bool {
+  for c in input {
+    if c is ('\u{0000}'..='\u{0020}' | '\u{007f}') {
+      return true
+    }
+  }
+  false
+}
+
+///|
+priv enum PortParse {
+  Empty
+  Value(UInt16)
+  Overflow
+}
+
+///|
+fn parse_port_prefix(input : StringView) -> PortParse {
+  let mut value : UInt64 = 0
+  let mut saw_digit = false
+  for c in input {
+    if !c.is_ascii_digit() {
+      break
+    }
+    saw_digit = true
+    value = value * 10 + (c.to_int() - '0').to_uint64()
+    if value > 65535 {
+      return Overflow
+    }
+  }
+  if !saw_digit {
+    return Empty
+  }
+  Value(value.to_uint16())
+}
+
+///|
+fn take_until_host_delimiter(input : StringView, is_special : Bool) -> String {
+  let output = StringBuilder::new()
+  for c in input {
+    if c is ('/' | '?' | '#') || (is_special && c is '\\') {
+      break
+    }
+    output.write_char(c)
+  }
+  output.to_string()
+}
+
+///|
+fn has_empty_host(host : Host?) -> Bool {
+  match host {
+    None => true
+    Some(Opaque("")) => true
+    _ => false
+  }
 }
 
 ///|
