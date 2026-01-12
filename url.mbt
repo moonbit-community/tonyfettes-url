@@ -822,6 +822,7 @@ priv enum State {
   PathOrAuthority
   Authority
   Host
+  Hostname
   Port
   PathStart
   Path
@@ -902,19 +903,28 @@ fn Url::parse_basic(
   url : Url,
   base? : Url,
   input : StringView,
+  state_override? : State,
   validation_errors? : Array[ValidationError] = [],
 ) -> Url? {
-  let mut state : State = SchemeStart
+  let has_state_override = state_override is Some(_)
+  let mut state : State = match state_override {
+    Some(override_state) => override_state
+    None => SchemeStart
+  }
   let buffer : StringBuilder = StringBuilder::new()
   let mut at_sign_seen : Bool = false
   let mut inside_brackets : Bool = false
   let mut password_token_seen : Bool = false
   // Per WHATWG: 1. Remove leading/trailing C0 control or space
   //             2. Remove all ASCII tab or newline from entire input
-  let input = trim_c0_control_or_space(input)
+  let input = if has_state_override {
+    input
+  } else {
+    trim_c0_control_or_space(input)
+  }
   let input = remove_ascii_tab_or_newline(input)
-  // Handle empty input per WHATWG spec
-  if input.is_empty() {
+  // Handle empty input per WHATWG spec (only for full parse)
+  if input.is_empty() && !has_state_override {
     match base {
       Some(base) => {
         url.scheme = base.scheme
@@ -943,17 +953,50 @@ fn Url::parse_basic(
           if c.is_ascii_alphabetic() {
             buffer.write_char(c.to_ascii_lowercase())
             state = Scheme
-          } else {
+          } else if !has_state_override {
             state = NoScheme
             continue view // Re-process same character in NoScheme
+          } else {
+            return None
           }
         Scheme =>
           match c {
             'a'..='z' | 'A'..='Z' | '0'..='9' | '+' | '-' | '.' =>
               buffer.write_char(c.to_ascii_lowercase())
             ':' => {
-              url.scheme = buffer.to_string()
+              let next_scheme = buffer.to_string()
+              if has_state_override {
+                let url_special = url.is_special()
+                let next_special = is_special_scheme(next_scheme)
+                if url_special && !next_special {
+                  return Some(url)
+                }
+                if !url_special && next_special {
+                  return Some(url)
+                }
+                if (!url.username.is_empty() ||
+                  !url.password.is_empty() ||
+                  url.port is Some(_)) &&
+                  next_scheme == "file" {
+                  return Some(url)
+                }
+                if url.scheme == "file" && has_empty_host(url.host) {
+                  return Some(url)
+                }
+              }
+              url.scheme = next_scheme
               buffer.reset()
+              if has_state_override {
+                match url.port {
+                  Some(port) =>
+                    if default_port(url.scheme) is Some(default) &&
+                      port == default {
+                      url.port = None
+                    }
+                  None => ()
+                }
+                return Some(url)
+              }
               if url.scheme is "file" {
                 if remaining.has_prefix("//") {
                   validation_errors.push(SpecialSchemeMissingFollowingSolidus)
@@ -977,10 +1020,14 @@ fn Url::parse_basic(
               }
             }
             _ => {
-              buffer.reset()
-              state = NoScheme
-              pointer.start_over()
-              continue pointer.view()
+              if has_state_override {
+                return None
+              } else {
+                buffer.reset()
+                state = NoScheme
+                pointer.start_over()
+                continue pointer.view()
+              }
             }
           }
         NoScheme =>
@@ -1136,7 +1183,11 @@ fn Url::parse_basic(
           } else {
             buffer.write_char(c)
           }
-        Host =>
+        Host | Hostname => {
+          if has_state_override && url.scheme == "file" {
+            state = FileHost
+            continue view
+          }
           if c is '[' {
             inside_brackets = true
             buffer.write_char(c)
@@ -1146,6 +1197,9 @@ fn Url::parse_basic(
           } else if c is ':' && !inside_brackets {
             if buffer.is_empty() {
               validation_errors.push(HostMissing)
+              return None
+            }
+            if state_override is Some(Hostname) {
               return None
             }
             let host = Host::parse(
@@ -1166,6 +1220,13 @@ fn Url::parse_basic(
               validation_errors.push(HostMissing)
               return None
             }
+            if has_state_override &&
+              buffer.is_empty() &&
+              (!url.username.is_empty() ||
+              !url.password.is_empty() ||
+              url.port is Some(_)) {
+              return None
+            }
             if buffer.is_empty() {
               url.host = Some(Host::Opaque(""))
             } else {
@@ -1182,13 +1243,19 @@ fn Url::parse_basic(
             }
             buffer.reset()
             state = PathStart
+            if has_state_override {
+              return Some(url)
+            }
           } else {
             buffer.write_char(c)
           }
+        }
         Port =>
           if c.is_ascii_digit() {
             buffer.write_char(c)
-          } else if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
+          } else if c is ('/' | '?' | '#') ||
+            (url.is_special() && c is '\\') ||
+            has_state_override {
             if !buffer.is_empty() {
               let port_str = buffer.to_string()
               let mut port_value : UInt64 = 0
@@ -1209,6 +1276,11 @@ fn Url::parse_basic(
               }
               url.port = if is_default { None } else { Some(port_u16) }
               buffer.reset()
+              if has_state_override {
+                return Some(url)
+              }
+            } else if has_state_override {
+              return None
             }
             state = PathStart
             pointer.decrease()
@@ -1225,10 +1297,10 @@ fn Url::parse_basic(
             if !(c is ('/' | '\\')) {
               pointer.decrease()
             }
-          } else if c is '?' {
+          } else if !has_state_override && c is '?' {
             url.query = Some("")
             state = Query
-          } else if c is '#' {
+          } else if !has_state_override && c is '#' {
             url.fragment = Some("")
             state = Fragment
           } else {
@@ -1238,7 +1310,9 @@ fn Url::parse_basic(
             }
           }
         Path =>
-          if c is ('/' | '?' | '#') || (url.is_special() && c is '\\') {
+          if c is '/' ||
+            (url.is_special() && c is '\\') ||
+            (!has_state_override && c is ('?' | '#')) {
             if url.is_special() && c is '\\' {
               validation_errors.push(InvalidReverseSolidus)
             }
@@ -1362,7 +1436,7 @@ fn Url::parse_basic(
             }
           }
         Query =>
-          if c is '#' {
+          if !has_state_override && c is '#' {
             url.fragment = Some("")
             state = Fragment
           } else {
@@ -1550,12 +1624,17 @@ fn Url::parse_basic(
     // Handle EOF based on current state
     match state {
       SchemeStart | NoScheme => {
+        if has_state_override {
+          return None
+        }
         validation_errors.push(MissingSchemeNonRelativeUrl)
         return None
       }
       Scheme =>
         // EOF in Scheme state without finding ':' - try as NoScheme if base exists
-        if base is Some(_) {
+        if has_state_override {
+          return None
+        } else if base is Some(_) {
           // Reset and re-parse in NoScheme state
           buffer.reset()
           state = NoScheme
@@ -1676,9 +1755,16 @@ fn Url::parse_basic(
           }
         }
       }
-      Host => {
+      Host | Hostname => {
         if url.is_special() && buffer.is_empty() {
           validation_errors.push(HostMissing)
+          return None
+        }
+        if has_state_override &&
+          buffer.is_empty() &&
+          (!url.username.is_empty() ||
+          !url.password.is_empty() ||
+          url.port is Some(_)) {
           return None
         }
         if !buffer.is_empty() {
@@ -1715,6 +1801,15 @@ fn Url::parse_basic(
             _ => false
           }
           url.port = if is_default { None } else { Some(port_u16) }
+        } else if has_state_override {
+          return None
+        }
+      PathStart =>
+        if has_state_override && url.host is None {
+          match url.path {
+            Segments(segments) => segments.push("")
+            _ => ()
+          }
         }
       Path => {
         let buffer_str = buffer.to_string()
