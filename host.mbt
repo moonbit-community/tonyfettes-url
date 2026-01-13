@@ -1,5 +1,6 @@
 ///|
 /// Represents a URL host per the WHATWG URL Standard.
+/// See: https://url.spec.whatwg.org/#host-representation
 /// Can be a domain name, IPv4 address, IPv6 address, or opaque string.
 pub enum Host {
   Domain(String)
@@ -141,24 +142,47 @@ fn contains_forbidden_domain_codepoint(s : String) -> Bool {
 
 ///|
 /// Parse a host string per WHATWG URL spec.
+/// See: https://url.spec.whatwg.org/#host-parsing
 /// Handles IPv4, IPv6 (in brackets), domain names with IDNA/Punycode, and opaque hosts.
+///
+/// The host parser takes a string input with an optional boolean isOpaque
+/// (default false), and then runs these steps:
+/// 1. If input starts with U+005B ([), then:
+///    1.1. If input does not end with U+005D (]), IPv6-unclosed validation error,
+///         return failure.
+///    1.2. Return the result of IPv6 parsing input with its leading U+005B ([)
+///         and trailing U+005D (]) removed.
+/// 2. If isOpaque is true, then return the result of opaque-host parsing input.
+/// 3. Assert: input is not the empty string.
+/// 4. Let domain be the result of running UTF-8 decode without BOM on the
+///    percent-decoding of input.
+/// 5. Let asciiDomain be the result of running domain to ASCII with domain and false.
+/// 6. If asciiDomain is failure, then return failure.
+/// 7. If asciiDomain contains a forbidden domain code point, domain-invalid-code-point
+///    validation error, return failure.
+/// 8. If asciiDomain ends in a number, then return the result of IPv4 parsing asciiDomain.
+/// 9. Return asciiDomain.
 pub fn Host::parse(
   input : StringView,
   is_opaque? : Bool = false,
 ) -> Host raise ValidationError {
   match input {
+    // 1. If input starts with U+005B ([)
     ['[', .. rest, ']'] => {
+      // 1.2. Return the result of IPv6 parsing
       let ipv6 = IPv6::parse(rest)
       IPv6(ipv6)
     }
-    ['[', ..] => raise IPv6Unclosed
+    ['[', ..] => raise IPv6Unclosed // 1.1. IPv6-unclosed validation error
     input => {
+      // 2. If isOpaque is true, return the result of opaque-host parsing
       if is_opaque {
         let opaque_host = Host::parse_opaque(input)
         return Host::Opaque(opaque_host)
       }
+      // 4. Let domain be the result of UTF-8 decode without BOM on percent-decoding of input
       let domain = @encoding/utf8.decode_lossy(percent_decode_string(input))
-      // Use IDNA to convert internationalized domain names to ASCII (Punycode)
+      // 5. Let asciiDomain be the result of running domain to ASCII
       // Per WHATWG, empty labels are allowed (unlike strict DNS/IDNA)
       let ascii_domain = @idna.to_ascii(
         domain,
@@ -199,19 +223,32 @@ pub fn Host::parse(
           }
         }
       }
-      // Check for forbidden domain code points after IDNA conversion
+      // 7. If asciiDomain contains a forbidden domain code point, return failure
       if contains_forbidden_domain_codepoint(ascii_domain) {
         raise HostInvalidCodePoint
       }
+      // 8. If asciiDomain ends in a number, return the result of IPv4 parsing
       if ends_in_a_number(ascii_domain) {
         return IPv4(IPv4::parse(ascii_domain))
       }
+      // 9. Return asciiDomain
       return Domain(ascii_domain)
     }
   }
 }
 
 ///|
+/// Check if a string ends in a number per WHATWG URL spec.
+/// See: https://url.spec.whatwg.org/#ends-in-a-number-checker
+/// A string input ends in a number if:
+/// 1. Let parts be the result of strictly splitting input on U+002E (.).
+/// 2. If the last item in parts is the empty string, then:
+///    2.1. If parts's size is 1, then return false.
+///    2.2. Remove the last item from parts.
+/// 3. Let last be the last item in parts.
+/// 4. If last is non-empty and contains only ASCII digits, then return true.
+/// 5. If parsing last as an IPv4 number does not return failure, then return true.
+/// 6. Return false.
 fn ends_in_a_number(input : StringView) -> Bool {
   let parts = input.split(".").collect()
   match parts {
@@ -296,18 +333,29 @@ let hex_digits : ReadOnlyArray[Char] = [
 ]
 
 ///|
+/// C0 control percent-encode set.
+/// See: https://url.spec.whatwg.org/#c0-control-percent-encode-set
+/// The C0 control percent-encode set are the C0 controls and all code points
+/// greater than U+007E (~).
 fn c0_control_percent_encode_set(char : Char) -> Bool {
   return char is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_)
 }
 
 ///|
+/// Query percent-encode set.
+/// See: https://url.spec.whatwg.org/#query-percent-encode-set
+/// The query percent-encode set is the C0 control percent-encode set and
+/// U+0020 SPACE, U+0022 ("), U+0023 (#), U+003C (<), and U+003E (>).
 fn query_percent_encode_set(char : Char) -> Bool {
   return char
     is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '#' | '<' | '>')
 }
 
 ///|
-/// Special query percent-encode set: query set + single quote (for http/https)
+/// Special-query percent-encode set.
+/// See: https://url.spec.whatwg.org/#special-query-percent-encode-set
+/// The special-query percent-encode set is the query percent-encode set and
+/// U+0027 (').
 fn special_query_percent_encode_set(char : Char) -> Bool {
   return char
     is ('\u{0000}'..='\u{001f}'
@@ -321,13 +369,20 @@ fn special_query_percent_encode_set(char : Char) -> Bool {
 }
 
 ///|
-/// Fragment percent-encode set: C0 control + space + "<>`
+/// Fragment percent-encode set.
+/// See: https://url.spec.whatwg.org/#fragment-percent-encode-set
+/// The fragment percent-encode set is the C0 control percent-encode set and
+/// U+0020 SPACE, U+0022 ("), U+003C (<), U+003E (>), and U+0060 (`).
 fn fragment_percent_encode_set(char : Char) -> Bool {
   return char
     is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '<' | '>' | '`')
 }
 
 ///|
+/// Path percent-encode set.
+/// See: https://url.spec.whatwg.org/#path-percent-encode-set
+/// The path percent-encode set is the query percent-encode set and
+/// U+003F (?), U+0060 (`), U+007B ({), and U+007D (}).
 fn path_percent_encode_set(char : Char) -> Bool {
   return char
     is ('\u{0000}'..='\u{001f}'
@@ -345,6 +400,11 @@ fn path_percent_encode_set(char : Char) -> Bool {
 }
 
 ///|
+/// Userinfo percent-encode set.
+/// See: https://url.spec.whatwg.org/#userinfo-percent-encode-set
+/// The userinfo percent-encode set is the path percent-encode set and
+/// U+002F (/), U+003A (:), U+003B (;), U+003D (=), U+0040 (@), U+005B ([)
+/// to U+005E (^), and U+007C (|).
 fn userinfo_percent_encode_set(char : Char) -> Bool {
   return char
     is ('\u{0000}'..='\u{001f}'

@@ -1,5 +1,6 @@
 ///|
 /// Represents a parsed URL per the WHATWG URL Standard.
+/// See: https://url.spec.whatwg.org/#url-representation
 /// Contains scheme, credentials (username/password), host, port, path, query, and fragment.
 pub struct Url {
   mut scheme : String
@@ -39,28 +40,35 @@ pub fn Url::parse(input : String, base? : Url) -> Url? {
 }
 
 ///|
-/// Serialize URL to string per WHATWG URL spec
+/// Serialize URL to string per WHATWG URL spec.
+/// See: https://url.spec.whatwg.org/#url-serializing
 pub fn Url::to_string(self : Url) -> String {
   let result = StringBuilder::new()
-  // Scheme
+  // 1. Let output be url's scheme and U+003A (:) concatenated.
   result.write_string(self.scheme)
   result.write_char(':')
-  // Authority (if host is present)
+  // 2. If url's host is non-null:
   match self.host {
     Some(host) => {
+      // 2.1. Append "//" to output.
       result.write_string("//")
-      // Userinfo
+      // 2.2. If url includes credentials, then:
       if !self.username.is_empty() || !self.password.is_empty() {
+        // 2.2.1. Append url's username to output.
         result.write_string(self.username)
+        // 2.2.2. If url's password is not the empty string, then append U+003A (:),
+        //        followed by url's password, to output.
         if !self.password.is_empty() {
           result.write_char(':')
           result.write_string(self.password)
         }
+        // 2.2.3. Append U+0040 (@) to output.
         result.write_char('@')
       }
-      // Host
+      // 2.3. Append url's host, serialized, to output.
       result.write_string(host.to_string())
-      // Port
+      // 2.4. If url's port is non-null, append U+003A (:) followed by url's port,
+      //      serialized, to output.
       match self.port {
         Some(port) => {
           result.write_char(':')
@@ -70,21 +78,27 @@ pub fn Url::to_string(self : Url) -> String {
       }
     }
     None =>
+      // 3. If url's host is null, url does not have an opaque path, url's path's
+      //    size is greater than 1, and url's path[0] is the empty string, then
+      //    append U+002F (/) and U+002E (.) to output.
+      //    (handled below in path serialization)
       // For file scheme without host, still include //
       if self.scheme == "file" {
         result.write_string("//")
       }
   }
-  // Path
+  // 4. If url has an opaque path, then append url's path to output.
+  // 5. Otherwise, then for each string in url's path, append U+002F (/) followed
+  //    by the string to output.
   match self.path {
     Opaque(path) => result.write_string(path)
     Segments(segments) =>
-      // Per WHATWG: If host is non-null, path is empty, and URL is special, append "/"
       if segments.is_empty() && self.host is Some(_) && self.is_special() {
         result.write_char('/')
       } else {
-        // Per WHATWG 4.5: If host is null, path is not opaque, path.length > 1,
-        // and path[0] is empty string, prepend "/." before the path
+        // 3. (continued) If url's host is null, url does not have an opaque path,
+        //    url's path's size is greater than 1, and url's path[0] is the empty
+        //    string, then append U+002F (/) and U+002E (.) to output.
         if self.host is None && segments.length() > 1 {
           match segments[0] {
             "" => result.write_string("/.")
@@ -97,7 +111,8 @@ pub fn Url::to_string(self : Url) -> String {
         }
       }
   }
-  // Query
+  // 6. If url's query is non-null, append U+003F (?), followed by url's query,
+  //    to output.
   match self.query {
     Some(query) => {
       result.write_char('?')
@@ -105,7 +120,8 @@ pub fn Url::to_string(self : Url) -> String {
     }
     None => ()
   }
-  // Fragment
+  // 7. If exclude fragment is false and url's fragment is non-null, then append
+  //    U+0023 (#), followed by url's fragment, to output.
   match self.fragment {
     Some(fragment) => {
       result.write_char('#')
@@ -113,6 +129,7 @@ pub fn Url::to_string(self : Url) -> String {
     }
     None => ()
   }
+  // 8. Return output.
   result.to_string()
 }
 
@@ -240,7 +257,12 @@ fn Url::parse_with_state(
 }
 
 ///|
-/// Set the full URL (re-parse and replace all components)
+/// Set the full URL (re-parse and replace all components).
+/// See: https://url.spec.whatwg.org/#dom-url-href
+/// The href setter steps are:
+/// 1. Let parsedURL be the result of running the basic URL parser on the given value.
+/// 2. If parsedURL is failure, then throw a TypeError.
+/// 3. Set this's URL to parsedURL.
 pub fn Url::set_href(self : Url, href : String) -> Unit {
   match Url::parse(href) {
     Some(parsed) => {
@@ -258,75 +280,129 @@ pub fn Url::set_href(self : Url, href : String) -> Unit {
 }
 
 ///|
-/// Set the protocol (scheme)
+/// Set the protocol (scheme).
+/// See: https://url.spec.whatwg.org/#dom-url-protocol
+/// The protocol setter steps are to basic URL parse the given value, followed
+/// by U+003A (:), with this's URL as url and scheme start state as state override.
 pub fn Url::set_protocol(self : Url, protocol : String) -> Unit {
   let input = "\{protocol}:"
   self.parse_with_state(input[:], SchemeStart)
 }
 
 ///|
-/// Set the username
+/// Set the username.
+/// See: https://url.spec.whatwg.org/#dom-url-username
+/// The username setter steps are:
+/// 1. If this's URL cannot have a username/password/port, then return.
+/// 2. Set the username given this's URL and the given value.
 pub fn Url::set_username(self : Url, username : String) -> Unit {
+  // 1. If this's URL cannot have a username/password/port, then return.
   if self.host is None || self.host is Some(Opaque("")) {
-    return // Cannot set username without a host
+    return
   }
   if self.scheme == "file" {
-    return // file: URLs don't have username
+    return
   }
+  // 2. Set the username given this's URL and the given value.
+  // See: https://url.spec.whatwg.org/#set-the-username
+  // Set url's username to the result of running UTF-8 percent-encode on the
+  // given value using the userinfo percent-encode set.
   self.username = utf8_percent_encode(username, userinfo_percent_encode_set)
 }
 
 ///|
-/// Set the password
+/// Set the password.
+/// See: https://url.spec.whatwg.org/#dom-url-password
+/// The password setter steps are:
+/// 1. If this's URL cannot have a username/password/port, then return.
+/// 2. Set the password given this's URL and the given value.
 pub fn Url::set_password(self : Url, password : String) -> Unit {
+  // 1. If this's URL cannot have a username/password/port, then return.
   if self.host is None || self.host is Some(Opaque("")) {
-    return // Cannot set password without a host
+    return
   }
   if self.scheme == "file" {
-    return // file: URLs don't have password
+    return
   }
+  // 2. Set the password given this's URL and the given value.
+  // See: https://url.spec.whatwg.org/#set-the-password
+  // Set url's password to the result of running UTF-8 percent-encode on the
+  // given value using the userinfo percent-encode set.
   self.password = utf8_percent_encode(password, userinfo_percent_encode_set)
 }
 
 ///|
-/// Set the host (hostname and optional port)
+/// Set the host (hostname and optional port).
+/// See: https://url.spec.whatwg.org/#dom-url-host
+/// The host setter steps are:
+/// 1. If this's URL has an opaque path, then return.
+/// 2. Basic URL parse the given value with this's URL as url and host state
+///    as state override.
 pub fn Url::set_host(self : Url, host_str : String) -> Unit {
+  // 1. If this's URL has an opaque path, then return.
   if self.path is Opaque(_) {
-    return // Cannot set host for opaque path URLs
+    return
   }
+  // 2. Basic URL parse the given value with this's URL as url and host state
+  //    as state override.
   self.parse_with_state(host_str[:], Host)
 }
 
 ///|
-/// Set the hostname (without port)
+/// Set the hostname (without port).
+/// See: https://url.spec.whatwg.org/#dom-url-hostname
+/// The hostname setter steps are:
+/// 1. If this's URL has an opaque path, then return.
+/// 2. Basic URL parse the given value with this's URL as url and hostname state
+///    as state override.
 pub fn Url::set_hostname(self : Url, hostname : String) -> Unit {
+  // 1. If this's URL has an opaque path, then return.
   if self.path is Opaque(_) {
-    return // Cannot set hostname for opaque path URLs
+    return
   }
+  // 2. Basic URL parse the given value with this's URL as url and hostname state
+  //    as state override.
   self.parse_with_state(hostname[:], Hostname)
 }
 
 ///|
-/// Set the port
+/// Set the port.
+/// See: https://url.spec.whatwg.org/#dom-url-port
+/// The port setter steps are:
+/// 1. If this's URL cannot have a username/password/port, then return.
+/// 2. If the given value is the empty string, then set this's URL's port to null.
+/// 3. Otherwise, basic URL parse the given value with this's URL as url and
+///    port state as state override.
 pub fn Url::set_port(self : Url, port_str : String) -> Unit {
+  // 1. If this's URL cannot have a username/password/port, then return.
   if has_empty_host(self.host) || self.path is Opaque(_) {
     return
   }
   if self.scheme == "file" {
-    return // file: URLs don't have port
+    return
   }
+  // 2. If the given value is the empty string, then set this's URL's port to null.
   if port_str.is_empty() {
     self.port = None
     return
   }
+  // 3. Otherwise, basic URL parse the given value with this's URL as url and
+  //    port state as state override.
   self.parse_with_state(port_str[:], Port)
 }
 
 ///|
-/// Set the pathname
+/// Set the pathname.
+/// See: https://url.spec.whatwg.org/#dom-url-pathname
+/// The pathname setter steps are:
+/// 1. If this's URL has an opaque path, then return.
+/// 2. Empty this's URL's path.
+/// 3. Basic URL parse the given value with this's URL as url and path start
+///    state as state override.
 pub fn Url::set_pathname(self : Url, pathname : String) -> Unit {
+  // 1. If this's URL has an opaque path, then return.
   if self.path is Opaque(_) {
-    return // Cannot set pathname for opaque path URLs
+    return
   }
   let cleaned = remove_ascii_tab_or_newline(pathname[:])
   if cleaned.is_empty() {
@@ -337,41 +413,67 @@ pub fn Url::set_pathname(self : Url, pathname : String) -> Unit {
     }
     return
   }
+  // 2. Empty this's URL's path.
   self.path = Segments([])
+  // 3. Basic URL parse the given value with this's URL as url and path start
+  //    state as state override.
   self.parse_with_state(cleaned[:], PathStart)
 }
 
 ///|
-/// Set the search (query string)
+/// Set the search (query string).
+/// See: https://url.spec.whatwg.org/#dom-url-search
+/// The search setter steps are:
+/// 1. If the given value is the empty string, set this's URL's query to null.
+/// 2. Otherwise:
+///    2.1. Let input be the given value with a single leading U+003F (?) removed, if any.
+///    2.2. Set this's URL's query to the empty string.
+///    2.3. Basic URL parse input with this's URL as url and query state as
+///         state override.
 pub fn Url::set_search(self : Url, search : String) -> Unit {
   let cleaned = remove_ascii_tab_or_newline(search[:])
+  // 1. If the given value is the empty string, set this's URL's query to null.
   if cleaned.is_empty() {
     self.query = None
     return
   }
-  // Strip leading "?" if present
+  // 2.1. Let input be the given value with a single leading U+003F (?) removed, if any.
   let query = match cleaned[:] {
     ['?', .. rest] => rest
     _ => cleaned[:]
   }
+  // 2.2. Set this's URL's query to the empty string.
   self.query = Some("")
+  // 2.3. Basic URL parse input with this's URL as url and query state as state override.
   self.parse_with_state(query, Query)
 }
 
 ///|
-/// Set the hash (fragment)
+/// Set the hash (fragment).
+/// See: https://url.spec.whatwg.org/#dom-url-hash
+/// The hash setter steps are:
+/// 1. If the given value is the empty string, then set this's URL's fragment to null.
+/// 2. Otherwise:
+///    2.1. Let input be the given value with a single leading U+0023 (#) removed, if any.
+///    2.2. Set this's URL's fragment to the empty string.
+///    2.3. Basic URL parse input with this's URL as url and fragment state as
+///         state override.
 pub fn Url::set_hash(self : Url, hash : String) -> Unit {
   let cleaned = remove_ascii_tab_or_newline(hash[:])
+  // 1. If the given value is the empty string, then set this's URL's fragment to null.
   if cleaned.is_empty() {
     self.fragment = None
     return
   }
-  // Strip leading "#" if present
+  // 2.1. Let input be the given value with a single leading U+0023 (#) removed, if any.
   let fragment = match cleaned[:] {
     ['#', .. rest] => rest
     _ => cleaned[:]
   }
+  // 2.2. Set this's URL's fragment to the empty string.
   self.fragment = Some("")
+  // 2.3. Basic URL parse input with this's URL as url and fragment state as
+  //      state override.
   self.parse_with_state(fragment, Fragment)
 }
 
@@ -471,27 +573,50 @@ fn is_double_dot_path_segment(segment : String) -> Bool {
 }
 
 ///|
+/// Parser states per WHATWG URL spec.
+/// See: https://url.spec.whatwg.org/#concept-basic-url-parser
 priv enum State {
+  /// https://url.spec.whatwg.org/#scheme-start-state
   SchemeStart
+  /// https://url.spec.whatwg.org/#scheme-state
   Scheme
+  /// https://url.spec.whatwg.org/#no-scheme-state
   NoScheme
+  /// https://url.spec.whatwg.org/#file-state
   File
+  /// https://url.spec.whatwg.org/#file-slash-state
   FileSlash
+  /// https://url.spec.whatwg.org/#file-host-state
   FileHost
+  /// https://url.spec.whatwg.org/#relative-state
   Relative
+  /// https://url.spec.whatwg.org/#relative-slash-state
   RelativeSlash
+  /// https://url.spec.whatwg.org/#special-relative-or-authority-state
   SpecialRelativeOrAuthority
+  /// https://url.spec.whatwg.org/#special-authority-ignore-slashes-state
   SpecialAuthorityIgnoreSlashes
+  /// https://url.spec.whatwg.org/#special-authority-slashes-state
   SpecialAuthoritySlashes
+  /// https://url.spec.whatwg.org/#path-or-authority-state
   PathOrAuthority
+  /// https://url.spec.whatwg.org/#authority-state
   Authority
+  /// https://url.spec.whatwg.org/#host-state
   Host
+  /// https://url.spec.whatwg.org/#hostname-state
   Hostname
+  /// https://url.spec.whatwg.org/#port-state
   Port
+  /// https://url.spec.whatwg.org/#path-start-state
   PathStart
+  /// https://url.spec.whatwg.org/#path-state
   Path
+  /// https://url.spec.whatwg.org/#opaque-path-state
   OpaquePath
+  /// https://url.spec.whatwg.org/#query-state
   Query
+  /// https://url.spec.whatwg.org/#fragment-state
   Fragment
 }
 
@@ -563,6 +688,8 @@ fn StringPointer::start_over(self : StringPointer) -> Unit {
 }
 
 ///|
+/// Basic URL parser per WHATWG URL spec.
+/// See: https://url.spec.whatwg.org/#concept-basic-url-parser
 fn Url::parse_basic(
   url : Url,
   base? : Url,
@@ -571,19 +698,25 @@ fn Url::parse_basic(
   validation_errors? : Array[ValidationError] = [],
 ) -> Url? {
   let has_state_override = state_override is Some(_)
+  // 2. If state override is not given, set state to scheme start state.
   let mut state : State = match state_override {
     Some(override_state) => override_state
     None => SchemeStart
   }
+  // Special case: file URLs with host/hostname state override use FileHost
   if has_state_override &&
     url.scheme == "file" &&
     (state is Host || state is Hostname) {
     state = FileHost
   }
+  // 3. Let buffer be the empty string.
   let buffer : StringBuilder = StringBuilder::new()
+  // 4. Let atSignSeen, insideBrackets, and passwordTokenSeen be false.
   let mut at_sign_seen : Bool = false
   let mut inside_brackets : Bool = false
   let mut password_token_seen : Bool = false
+  // 1. If input contains any ASCII tab or newline, validation error.
+  //    (Note: We also remove leading/trailing C0 control or space per step 1)
   // Per WHATWG: 1. Remove leading/trailing C0 control or space
   //             2. Remove all ASCII tab or newline from entire input
   let input = if has_state_override {
@@ -618,6 +751,12 @@ fn Url::parse_basic(
     for view = pointer.view(); ; view = pointer.next() {
       guard view is [c, .. remaining] else { break }
       match state {
+        // Scheme start state (https://url.spec.whatwg.org/#scheme-start-state)
+        // 1. If c is an ASCII alpha, append c, lowercased, to buffer, and set
+        //    state to scheme state.
+        // 2. Otherwise, if state override is not given, set state to no scheme
+        //    state and decrease pointer by 1.
+        // 3. Otherwise, return failure.
         SchemeStart =>
           if c.is_ascii_alphabetic() {
             buffer.write_char(c.to_ascii_lowercase())
@@ -628,6 +767,13 @@ fn Url::parse_basic(
           } else {
             return None
           }
+        // Scheme state (https://url.spec.whatwg.org/#scheme-state)
+        // 1. If c is an ASCII alphanumeric, U+002B (+), U+002D (-), or U+002E (.),
+        //    append c, lowercased, to buffer.
+        // 2. Otherwise, if c is U+003A (:), then: [complex logic follows]
+        // 3. Otherwise, if state override is not given, set buffer to empty,
+        //    state to no scheme state, and start over.
+        // 4. Otherwise, return failure.
         Scheme =>
           match c {
             'a'..='z' | 'A'..='Z' | '0'..='9' | '+' | '-' | '.' =>
@@ -700,19 +846,29 @@ fn Url::parse_basic(
                 continue pointer.view()
               }
           }
+        // No scheme state (https://url.spec.whatwg.org/#no-scheme-state)
+        // 1. If base is null, or base has an opaque path and c is not U+0023 (#),
+        //    missing-scheme-non-relative-URL validation error, return failure.
+        // 2. Otherwise, if base has an opaque path and c is U+0023 (#), set url's
+        //    scheme/path/query from base, set url's fragment to empty, set state
+        //    to fragment state.
+        // 3. Otherwise, if base's scheme is not "file", set state to relative state
+        //    and decrease pointer by 1.
+        // 4. Otherwise, set state to file state and decrease pointer by 1.
         NoScheme =>
           match base {
             None => {
-              // No base URL means we need a scheme
+              // 1. Base is null
               validation_errors.push(MissingSchemeNonRelativeUrl)
               return None
             }
             Some({ path: Opaque(_), .. }) if !(c is '#') => {
-              // Base has opaque path but input is not fragment
+              // 1. Base has opaque path and c is not #
               validation_errors.push(MissingSchemeNonRelativeUrl)
               return None
             }
             Some({ path: Opaque(_), .. } as base) if c is '#' => {
+              // 2. Base has opaque path and c is #
               url.scheme = base.scheme
               url.path = base.path.clone()
               url.query = base.query
@@ -720,14 +876,22 @@ fn Url::parse_basic(
               state = Fragment
             }
             Some({ scheme, .. }) if scheme != "file" => {
+              // 3. Base's scheme is not "file"
               state = Relative
               continue view // Re-process same character in Relative
             }
             _ => {
+              // 4. Base's scheme is "file"
               state = File
               continue view // Re-process same character in File
             }
           }
+        // Special relative or authority state
+        // (https://url.spec.whatwg.org/#special-relative-or-authority-state)
+        // 1. If c is U+002F (/) and remaining starts with U+002F (/), then set
+        //    state to special authority ignore slashes state and increase pointer by 1.
+        // 2. Otherwise, special-scheme-missing-following-solidus validation error,
+        //    set state to relative state and decrease pointer by 1.
         SpecialRelativeOrAuthority =>
           if c is '/' && remaining.has_prefix("/") {
             state = SpecialAuthorityIgnoreSlashes
@@ -737,6 +901,9 @@ fn Url::parse_basic(
             state = Relative
             continue view // Re-process same character in Relative
           }
+        // Path or authority state (https://url.spec.whatwg.org/#path-or-authority-state)
+        // 1. If c is U+002F (/), then set state to authority state.
+        // 2. Otherwise, set state to path state, and decrease pointer by 1.
         PathOrAuthority =>
           if c is '/' {
             state = Authority
@@ -744,6 +911,7 @@ fn Url::parse_basic(
             state = Path
             continue view // Re-process same character in Path
           }
+        // Relative state (https://url.spec.whatwg.org/#relative-state)
         Relative => {
           guard base is Some(base) else {
             abort("base must be Some(base) in Relative state")
@@ -778,18 +946,25 @@ fn Url::parse_basic(
             }
           }
         }
+        // Relative slash state (https://url.spec.whatwg.org/#relative-slash-state)
         RelativeSlash => {
           guard base is Some(base) else {
             abort("base must be Some(base) in RelativeSlash state")
           }
+          // 1. If url is special and c is U+002F (/) or U+005C (\), then:
           if url.is_special() && c is ('/' | '\\') {
+            // 1.1. If c is U+005C (\), invalid-reverse-solidus validation error.
             if c is '/' {
               validation_errors.push(InvalidReverseSolidus)
             }
+            // 1.2. Set state to special authority ignore slashes state.
             state = SpecialAuthorityIgnoreSlashes
           } else if c is '/' {
+            // 2. Otherwise, if c is U+002F (/), then set state to authority state.
             state = Authority
           } else {
+            // 3. Otherwise, set url's username/password/host/port from base,
+            //    state to path state, and decrease pointer by 1.
             url.username = base.username
             url.password = base.password
             url.host = base.host
@@ -798,6 +973,12 @@ fn Url::parse_basic(
             continue view // Re-process same character in Path
           }
         }
+        // Special authority slashes state
+        // (https://url.spec.whatwg.org/#special-authority-slashes-state)
+        // 1. If c is U+002F (/) and remaining starts with U+002F (/), then set
+        //    state to special authority ignore slashes state and increase pointer by 1.
+        // 2. Otherwise, special-scheme-missing-following-solidus validation error,
+        //    set state to special authority ignore slashes state and decrease pointer by 1.
         SpecialAuthoritySlashes =>
           if c is '/' && remaining.has_prefix("/") {
             state = SpecialAuthorityIgnoreSlashes
@@ -807,6 +988,11 @@ fn Url::parse_basic(
             state = SpecialAuthorityIgnoreSlashes
             continue view // Re-process same character
           }
+        // Special authority ignore slashes state
+        // (https://url.spec.whatwg.org/#special-authority-ignore-slashes-state)
+        // 1. If c is neither U+002F (/) nor U+005C (\), then set state to authority
+        //    state and decrease pointer by 1.
+        // 2. Otherwise, special-scheme-missing-following-solidus validation error.
         SpecialAuthorityIgnoreSlashes =>
           if !(c is ('/' | '\\')) {
             state = Authority
@@ -814,6 +1000,7 @@ fn Url::parse_basic(
           } else {
             validation_errors.push(SpecialSchemeMissingFollowingSolidus)
           }
+        // Authority state (https://url.spec.whatwg.org/#authority-state)
         Authority =>
           if c is '@' {
             validation_errors.push(InvalidCredentials)
@@ -853,11 +1040,21 @@ fn Url::parse_basic(
           } else {
             buffer.write_char(c)
           }
+        // Host state (https://url.spec.whatwg.org/#host-state)
+        // Hostname state (https://url.spec.whatwg.org/#hostname-state)
+        // These states are nearly identical, with hostname state not transitioning to port.
         Host | Hostname => {
           if has_state_override && url.scheme == "file" {
             state = FileHost
             continue view
           }
+          // 1. If state override is given and url's scheme is "file", then decrease
+          //    pointer by 1 and set state to file host state.
+          // 2. Otherwise, if c is U+003A (:) and insideBrackets is false, then:
+          // 3. Otherwise, if c is the EOF code point, U+002F (/), U+003F (?), or
+          //    U+0023 (#), or url is special and c is U+005C (\), then decrease
+          //    pointer by 1 and: [process host]
+          // 4. Otherwise, append c to buffer.
           if c is '[' {
             inside_brackets = true
             buffer.write_char(c)
@@ -922,6 +1119,12 @@ fn Url::parse_basic(
             buffer.write_char(c)
           }
         }
+        // Port state (https://url.spec.whatwg.org/#port-state)
+        // 1. If c is an ASCII digit, append c to buffer.
+        // 2. Otherwise, if c is the EOF code point, U+002F (/), U+003F (?), or
+        //    U+0023 (#), or url is special and c is U+005C (\), or state override
+        //    is given, then: [process port]
+        // 3. Otherwise, return failure.
         Port =>
           if c.is_ascii_digit() {
             buffer.write_char(c)
@@ -960,6 +1163,18 @@ fn Url::parse_basic(
             // Invalid port character
             return None
           }
+        // Path start state (https://url.spec.whatwg.org/#path-start-state)
+        // 1. If url is special, then:
+        //    1.1. If c is U+005C (\), invalid-reverse-solidus validation error.
+        //    1.2. Set state to path state.
+        //    1.3. If c is neither U+002F (/) nor U+005C (\), then decrease pointer by 1.
+        // 2. Otherwise, if state override is not given and c is U+003F (?), set
+        //    url's query to the empty string and state to query state.
+        // 3. Otherwise, if state override is not given and c is U+0023 (#), set
+        //    url's fragment to the empty string and state to fragment state.
+        // 4. Otherwise, if c is not the EOF code point:
+        //    4.1. Set state to path state.
+        //    4.2. If c is not U+002F (/), then decrease pointer by 1.
         PathStart =>
           if url.is_special() {
             if c is '\\' {
@@ -981,6 +1196,7 @@ fn Url::parse_basic(
               continue view
             }
           }
+        // Path state (https://url.spec.whatwg.org/#path-state)
         Path =>
           if c is '/' ||
             (url.is_special() && c is '\\') ||
@@ -1073,6 +1289,13 @@ fn Url::parse_basic(
           } else {
             buffer.write_char(c)
           }
+        // Opaque path state (https://url.spec.whatwg.org/#opaque-path-state)
+        // 1. If c is U+003F (?), then set url's query to the empty string and
+        //    state to query state.
+        // 2. Otherwise, if c is U+0023 (#), then set url's fragment to the empty
+        //    string and state to fragment state.
+        // 3. Otherwise: [if not EOF, UTF-8 percent-encode c using C0 control
+        //    percent-encode set and append result to url's path]
         OpaquePath =>
           if c is '?' {
             // Encode trailing spaces in opaque path before transitioning to Query
@@ -1107,6 +1330,14 @@ fn Url::parse_basic(
               _ => ()
             }
           }
+        // Query state (https://url.spec.whatwg.org/#query-state)
+        // 1. If state override is not given and c is U+0023 (#), then set url's
+        //    fragment to the empty string and state to fragment state.
+        // 2. Otherwise, if c is not the EOF code point:
+        //    2.1. If url is special and url's scheme is not "ws" or "wss", then
+        //         use the special-query percent-encode set.
+        //    2.2. UTF-8 percent-encode c using the appropriate encode set, and
+        //         append the result to url's query.
         Query =>
           if !has_state_override && c is '#' {
             url.fragment = Some("")
@@ -1139,6 +1370,10 @@ fn Url::parse_basic(
               None => ()
             }
           }
+        // Fragment state (https://url.spec.whatwg.org/#fragment-state)
+        // If c is not the EOF code point, then:
+        //   UTF-8 percent-encode c using the fragment percent-encode set and
+        //   append the result to url's fragment.
         Fragment =>
           match url.fragment {
             Some(f) =>
@@ -1159,6 +1394,12 @@ fn Url::parse_basic(
               }
             None => ()
           }
+        // File state (https://url.spec.whatwg.org/#file-state)
+        // 1. Set url's scheme to "file".
+        // 2. Set url's host to the empty string.
+        // 3. If c is U+002F (/) or U+005C (\), then: [set state to file slash state]
+        // 4. Otherwise, if base is non-null and base's scheme is "file": [copy from base]
+        // 5. Otherwise: [set state to path state]
         File => {
           url.scheme = "file"
           if c is ('/' | '\\') {
@@ -1204,6 +1445,11 @@ fn Url::parse_basic(
             continue view // Re-process same character in Path
           }
         }
+        // File slash state (https://url.spec.whatwg.org/#file-slash-state)
+        // 1. If c is U+002F (/) or U+005C (\), then:
+        //    1.1. If c is U+005C (\), invalid-reverse-solidus validation error.
+        //    1.2. Set state to file host state.
+        // 2. Otherwise: [check for Windows drive letter, set host/path from base if available]
         FileSlash => {
           url.scheme = "file"
           if c is ('/' | '\\') {
@@ -1238,6 +1484,15 @@ fn Url::parse_basic(
             continue view // Re-process same character in Path
           }
         }
+        // File host state (https://url.spec.whatwg.org/#file-host-state)
+        // 1. If c is the EOF code point, U+002F (/), U+005C (\), U+003F (?), or
+        //    U+0023 (#), then decrease pointer by 1 and then:
+        //    1.1. If state override is not given and buffer is a Windows drive letter,
+        //         set state to path state. (Note: This is a file: URL quirk.)
+        //    1.2. Otherwise, if buffer is the empty string, then set url's host
+        //         to the empty string and set state to path start state.
+        //    1.3. Otherwise, run these steps: [parse host, handle "localhost"]
+        // 2. Otherwise, append c to buffer.
         FileHost => {
           url.scheme = "file"
           if c is ('/' | '\\' | '?' | '#') {
