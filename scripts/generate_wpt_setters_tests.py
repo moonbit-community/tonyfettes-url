@@ -66,7 +66,6 @@ def generate_single_test(setter, index, item):
     lines.append("///|")
     lines.append(f'test "WPT setters {setter} #{index}" {{')
     lines.append(f'  let url = @url.Url::parse("{href}")')
-    lines.append('  guard url is Some(url) else { fail("parse failed") }')
     lines.append(f'  url.{setter_method(setter)}("{new_value}")')
 
     for field in FIELD_ORDER:

@@ -47,32 +47,30 @@ def generate_single_test(index, test):
         # No base URL
         if is_failure:
             # Case B: No base, expects failure
-            lines.append(f'  let result = @url.Url::parse("{input_val}")')
+            lines.append(f'  let result = @url.Url::try_parse("{input_val}")')
             lines.append('  guard result is None else {')
             lines.append('    fail("Expected failure but got: \\{result.unwrap().to_string().escape()}")')
             lines.append('  }')
         else:
             # Case A: No base, expects success
             href = escape_moonbit_string(test.get('href', ''))
-            lines.append(f'  let result = @url.Url::parse("{input_val}")')
-            lines.append('  guard result is Some(url) else { fail("Expected success but parsing failed") }')
+            lines.append(f'  let url = @url.Url::parse("{input_val}")')
             lines.append(f'  assert_eq(url.to_string(), "{href}")')
     else:
         # With base URL
         base_escaped = escape_moonbit_string(base_val)
         lines.append(f'  let base_url = @url.Url::parse("{base_escaped}")')
-        lines.append('  guard base_url is Some(base_url) else { return }')
-        lines.append(f'  let result = @url.Url::parse("{input_val}", base=base_url)')
 
         if is_failure:
             # Case D: With base, expects failure
+            lines.append(f'  let result = @url.Url::try_parse("{input_val}", base=base_url)')
             lines.append('  guard result is None else {')
             lines.append('    fail("Expected failure but got: \\{result.unwrap().to_string().escape()}")')
             lines.append('  }')
         else:
             # Case C: With base, expects success
+            lines.append(f'  let url = @url.Url::parse("{input_val}", base=base_url)')
             href = escape_moonbit_string(test.get('href', ''))
-            lines.append('  guard result is Some(url) else { fail("Expected success but parsing failed") }')
             lines.append(f'  assert_eq(url.to_string(), "{href}")')
 
     lines.append('}')

@@ -30,12 +30,31 @@ fn Url::new() -> Url {
 
 ///|
 /// Parse a URL string, optionally with a base URL for relative resolution
-pub fn Url::parse(input : String, base? : Url) -> Url? {
+#as_free_fn
+pub fn Url::try_parse(
+  input : StringView,
+  base? : Url,
+  validation_errors? : Array[ValidationError],
+) -> Url? {
   let url = Url::new()
-  let validation_errors : Array[ValidationError] = []
-  match base {
-    Some(base) => Url::parse_basic(url, input, base~, validation_errors~)
-    None => Url::parse_basic(url, input, validation_errors~)
+  Url::parse_basic(url, input, base?, validation_errors?)
+}
+
+///|
+pub suberror ValidationErrors {
+  ValidationErrors(Array[ValidationError])
+}
+
+///|
+#as_free_fn
+pub fn Url::parse(
+  input : StringView,
+  base? : Url,
+) -> Url raise ValidationErrors {
+  let validation_errors = []
+  match Url::try_parse(input, base?, validation_errors~) {
+    Some(url) => url
+    None => raise ValidationErrors(validation_errors)
   }
 }
 
@@ -263,20 +282,16 @@ fn Url::parse_with_state(
 /// 1. Let parsedURL be the result of running the basic URL parser on the given value.
 /// 2. If parsedURL is failure, then throw a TypeError.
 /// 3. Set this's URL to parsedURL.
-pub fn Url::set_href(self : Url, href : String) -> Unit {
-  match Url::parse(href) {
-    Some(parsed) => {
-      self.scheme = parsed.scheme
-      self.username = parsed.username
-      self.password = parsed.password
-      self.host = parsed.host
-      self.port = parsed.port
-      self.path = parsed.path
-      self.query = parsed.query
-      self.fragment = parsed.fragment
-    }
-    None => ()
-  }
+pub fn Url::set_href(self : Url, href : String) -> Unit raise ValidationErrors {
+  let parsed = Url::parse(href)
+  self.scheme = parsed.scheme
+  self.username = parsed.username
+  self.password = parsed.password
+  self.host = parsed.host
+  self.port = parsed.port
+  self.path = parsed.path
+  self.query = parsed.query
+  self.fragment = parsed.fragment
 }
 
 ///|
