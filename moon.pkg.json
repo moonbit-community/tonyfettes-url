@@ -9,6 +9,5 @@
       "path": "moonbitlang/core/buffer",
       "alias": "buffer"
     }
-  ],
-  "wbtest-import": ["tonyfettes/assert"]
+  ]
 }
