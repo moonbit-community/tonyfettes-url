@@ -1,5 +1,14 @@
 {
   "import": [
-    "tonyfettes/unicode/idna"
-  ]
+    "tonyfettes/unicode/idna",
+    {
+      "path": "moonbitlang/core/encoding/utf8",
+      "alias": "encoding/utf8"
+    },
+    {
+      "path": "moonbitlang/core/buffer",
+      "alias": "buffer"
+    }
+  ],
+  "wbtest-import": ["tonyfettes/assert"]
 }

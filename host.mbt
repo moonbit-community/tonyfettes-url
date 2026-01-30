@@ -285,18 +285,6 @@ fn ends_in_a_number(input : StringView) -> Bool {
 }
 
 ///|
-test "ends_in_a_number" {
-  @json.inspect(ends_in_a_number("example.com.123"), content=true)
-  @json.inspect(!ends_in_a_number("example.com.abc"), content=true)
-  @json.inspect(!ends_in_a_number("example.com."), content=true)
-  @json.inspect(!ends_in_a_number("example.com"), content=true)
-  @json.inspect(ends_in_a_number("example.0x1A"), content=true)
-  @json.inspect(!ends_in_a_number("example.0xG1"), content=true)
-  @json.inspect(!ends_in_a_number("example.09"), content=false)
-  @json.inspect(ends_in_a_number("0xffffffff"), content=true)
-}
-
-///|
 /// Parse an opaque host per WHATWG URL spec
 /// Only rejects forbidden host code points, accepts everything else
 fn Host::parse_opaque(input : StringView) -> String raise ValidationError {
