@@ -11,7 +11,7 @@ enum Path {
 ///|
 /// Serialize path per WHATWG URL spec.
 /// See: https://url.spec.whatwg.org/#url-path-serializer
-fn Path::to_string(self : Path) -> String {
+pub fn Path::to_string(self : Path) -> String {
   match self {
     Opaque(path) => path
     Segments(segments) =>
