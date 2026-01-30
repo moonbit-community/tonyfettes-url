@@ -1,11 +1,11 @@
 ///|
 test "ends_in_a_number" {
-  @assert.t(ends_in_a_number("example.com.123"))
-  @assert.t(!ends_in_a_number("example.com.abc"))
-  @assert.t(!ends_in_a_number("example.com."))
-  @assert.t(!ends_in_a_number("example.com"))
-  @assert.t(ends_in_a_number("example.0x1A"))
-  @assert.t(!ends_in_a_number("example.0xG1"))
-  @assert.t(!ends_in_a_number("example.09"))
-  @assert.t(ends_in_a_number("0xffffffff"))
+  assert_eq(ends_in_a_number("example.com.123"), true)
+  assert_eq(ends_in_a_number("example.com.abc"), false)
+  assert_eq(ends_in_a_number("example.com."), false)
+  assert_eq(ends_in_a_number("example.com"), false)
+  assert_eq(ends_in_a_number("example.0x1A"), true)
+  assert_eq(ends_in_a_number("example.0xG1"), false)
+  assert_eq(ends_in_a_number("example.09"), true)
+  assert_eq(ends_in_a_number("0xffffffff"), true)
 }
