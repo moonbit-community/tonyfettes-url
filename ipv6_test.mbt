@@ -6,7 +6,7 @@ test "IPv6::parse" {
     "ffff::127.0.xyz.1", "ffff::127.0xyz", "ffff::127.00.0.1", "ffff::127.0.0.1.2",
     "ffff::127.0.0.4000", "ffff::127.0.0",
   ]
-  @json.inspect(inputs.map(input => try? IPv6::parse(input)), content=[
+  json_inspect(inputs.map(input => try? IPv6::parse(input)), content=[
     { "Ok": [0, 0, 0, 0, 0, 0, 0, 1] },
     { "Ok": [8193, 3512, 0, 0, 0, 0, 0, 1] },
     { "Ok": [0, 0, 0, 0, 0, 65535, 49152, 513] },

@@ -6,7 +6,7 @@ test "Host::parse IDNA" {
      "中文.com", // Chinese
      "example.com",
   ] // ASCII passthrough
-  @json.inspect(idn_inputs.map(input => try? Host::parse(input)), content=[
+  json_inspect(idn_inputs.map(input => try? Host::parse(input)), content=[
     { "Ok": ["Domain", "xn--mnchen-3ya.de"] },
     { "Ok": ["Domain", "xn--fiq228c.com"] },
     { "Ok": ["Domain", "example.com"] },
@@ -23,7 +23,7 @@ test "Host::to_unicode" {
      "中文.com", // Chinese
      "example.com",
   ] // ASCII passthrough
-  @json.inspect(inputs.map(input => Host::parse(input).to_unicode()), content=[
+  json_inspect(inputs.map(input => Host::parse(input).to_unicode()), content=[
     "münchen.de", "中文.com", "example.com",
   ])
 }
@@ -34,7 +34,7 @@ test "Host::parse" {
     "EXAMPLE.com", "example%2Ecom", "0", "%30", "0x", "0xffffffff", "[0:0::1]", "[0:0::1%5D",
     "[0:0::%31]", "09", "example.255", "example^example",
   ]
-  @json.inspect(inputs.map(input => try? Host::parse(input)), content=[
+  json_inspect(inputs.map(input => try? Host::parse(input)), content=[
     { "Ok": ["Domain", "example.com"] },
     { "Ok": ["Domain", "example.com"] },
     // "0" is valid IPv4 (single number notation for 0.0.0.0)

@@ -4,17 +4,12 @@ test "Url::parse basic" {
     "https://user:pass@example.com:8080/path/to/resource?query=value#fragment", "http://example.com",
     "ftp://ftp.example.com/pub/file.txt", "file:///C:/path/to/file.txt",
   ]
-  @json.inspect(
-    urls.map(fn(s) { Url::parse(s).map(fn(u) { u.to_string() }) }),
-    content=[
-      [
-        "https://user:pass@example.com:8080/path/to/resource?query=value#fragment",
-      ],
-      ["http://example.com/"],
-      ["ftp://ftp.example.com/pub/file.txt"],
-      ["file:///C:/path/to/file.txt"],
-    ],
-  )
+  json_inspect(urls.map(fn(s) { Url::parse(s).map(fn(u) { u.to_string() }) }), content=[
+    ["https://user:pass@example.com:8080/path/to/resource?query=value#fragment"],
+    ["http://example.com/"],
+    ["ftp://ftp.example.com/pub/file.txt"],
+    ["file:///C:/path/to/file.txt"],
+  ])
 }
 
 ///|
@@ -24,7 +19,7 @@ test "Url::parse special schemes" {
     ("https://example.com:443/", "https://example.com/"), // Default port removed
     ("http://example.com:8080/", "http://example.com:8080/"), // Non-default port kept
   ]
-  @json.inspect(
+  json_inspect(
     test_cases.map(fn(case) {
       let (input, _) = case
       Url::parse(input).map(fn(u) { u.to_string() })
