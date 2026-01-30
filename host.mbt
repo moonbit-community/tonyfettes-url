@@ -65,7 +65,7 @@ suberror ValidationError {
   InvalidReverseSolidus
   InvalidCredentials
   HostMissing
-} derive(ToJson)
+} derive(ToJson, Show, Debug)
 
 ///|
 fn percent_decode_string(input : StringView) -> Bytes {

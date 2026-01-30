@@ -43,7 +43,7 @@ pub fn Url::try_parse(
 ///|
 pub suberror ValidationErrors {
   ValidationErrors(Array[ValidationError])
-}
+} derive(Show, Debug)
 
 ///|
 #as_free_fn
