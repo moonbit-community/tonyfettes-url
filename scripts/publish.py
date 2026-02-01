@@ -15,6 +15,7 @@ SOURCE_FILES = [
     "ipv6.mbt",
     "path.mbt",
     "url.mbt",
+    "urlsearchparams.mbt",
 ]
 
 
