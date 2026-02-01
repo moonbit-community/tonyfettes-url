@@ -225,6 +225,31 @@ pub fn Url::search(self : Url) -> String {
 }
 
 ///|
+/// Get the URL search params.
+/// Returns a new UrlSearchParams instance parsed from the current query string.
+/// Note: Changes to the returned UrlSearchParams will NOT automatically update the URL.
+/// Use set_search_params() to update the URL with modified search params.
+/// See: https://url.spec.whatwg.org/#dom-url-searchparams
+pub fn Url::search_params(self : Url) -> UrlSearchParams {
+  match self.query {
+    Some(query) => UrlSearchParams::from_string(query)
+    None => UrlSearchParams::new()
+  }
+}
+
+///|
+/// Set the URL query from UrlSearchParams.
+/// This serializes the search params and updates the URL's query.
+pub fn Url::set_search_params(self : Url, params : UrlSearchParams) -> Unit {
+  let serialized = params.to_string()
+  if serialized.is_empty() {
+    self.query = None
+  } else {
+    self.query = Some(serialized)
+  }
+}
+
+///|
 /// Get the hash (fragment with leading "#" if present)
 pub fn Url::hash(self : Url) -> String {
   match self.fragment {
