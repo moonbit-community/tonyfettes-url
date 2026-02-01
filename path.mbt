@@ -24,6 +24,11 @@ pub fn Path::to_string(self : Path) -> String {
 }
 
 ///|
+pub impl Show for Path with output(self : Path, logger : &Logger) -> Unit {
+  logger.write_string(self.to_string())
+}
+
+///|
 /// Shorten a url's path per WHATWG URL spec.
 /// See: https://url.spec.whatwg.org/#shorten-a-urls-path
 /// To shorten a url's path:
