@@ -399,18 +399,22 @@ test "WPT URLSearchParams has #9 - Two-argument has()" {
 ///|
 test "WPT URLSearchParams has #10 - Two-argument has()" {
   let params = @url.UrlSearchParams::from_string("a=b&a=d&c&e&")
+  params.append("first", "null")
   assert_false(params.has("first", value=""))
 }
 
 ///|
 test "WPT URLSearchParams has #11 - Two-argument has()" {
   let params = @url.UrlSearchParams::from_string("a=b&a=d&c&e&")
+  params.append("first", "null")
   assert_true(params.has("first", value="null"))
 }
 
 ///|
 test "WPT URLSearchParams has #12 - Two-argument has()" {
   let params = @url.UrlSearchParams::from_string("a=b&a=d&c&e&")
+  params.append("first", "null")
+  params.delete("a", value="b")
   assert_true(params.has("a", value="d"))
 }
 

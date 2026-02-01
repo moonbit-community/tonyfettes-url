@@ -624,14 +624,48 @@ def generate_has_tests(content):
         constructor_pattern = r"(?:params\s*=\s*)?new URLSearchParams\((['\"][^'\"]*['\"])\)"
         has_true_pattern = r"assert_true\s*\(\s*params\.has\(([^)]+)\)\s*\)"
         has_false_pattern = r"assert_false\s*\(\s*params\.has\(([^)]+)\)\s*\)"
+        append_pattern = r"params\.append\((['\"][^'\"]*['\"]),\s*([^)]+)\)"
+        delete_pattern = r"params\.delete\(([^)]+)\)"
 
         lines = block.split('\n')
         current_input = None
+        operations = []  # Track (type, args...) operations
 
         for line in lines:
             const_match = re.search(constructor_pattern, line)
             if const_match:
                 current_input = parse_js_string(const_match.group(1))
+                operations = []  # Reset operations on new constructor
+
+            # Track append operations
+            append_match = re.search(append_pattern, line)
+            if append_match:
+                name = parse_js_string(append_match.group(1))
+                value_raw = append_match.group(2).strip()
+                if value_raw == 'null':
+                    value = 'null'
+                elif value_raw.startswith(("'", '"')):
+                    value = parse_js_string(value_raw)
+                else:
+                    value = value_raw
+                operations.append(('append', name, str(value)))
+
+            # Track delete operations
+            delete_match = re.search(delete_pattern, line)
+            if delete_match:
+                args = delete_match.group(1).strip()
+                if ',' in args:
+                    parts = args.split(',', 1)
+                    name = parse_js_string(parts[0].strip())
+                    value_raw = parts[1].strip()
+                    if value_raw.startswith(("'", '"')):
+                        value = parse_js_string(value_raw)
+                        operations.append(('delete2', name, value))
+                    else:
+                        operations.append(('delete', name))
+                else:
+                    name = parse_js_string(args)
+                    operations.append(('delete', name))
 
             # Check for assert_true(params.has(...))
             has_match = re.search(has_true_pattern, line)
@@ -677,9 +711,24 @@ def generate_has_tests(content):
                 else:
                     has_call = f'params.has("{name_escaped}")'
 
+                # Build operation lines
+                op_lines = [f'  let params = @url.UrlSearchParams::from_string("{input_escaped}")']
+                for op in operations:
+                    if op[0] == 'append':
+                        op_name = escape_moonbit_string(op[1])
+                        op_value = escape_moonbit_string(op[2])
+                        op_lines.append(f'  params.append("{op_name}", "{op_value}")')
+                    elif op[0] == 'delete':
+                        op_name = escape_moonbit_string(op[1])
+                        op_lines.append(f'  params.delete("{op_name}")')
+                    elif op[0] == 'delete2':
+                        op_name = escape_moonbit_string(op[1])
+                        op_value = escape_moonbit_string(op[2])
+                        op_lines.append(f'  params.delete("{op_name}", value="{op_value}")')
+
                 tests.append(f'''///|
 test "WPT URLSearchParams has #{test_idx} - {escape_moonbit_string(desc[:40])}" {{
-  let params = @url.UrlSearchParams::from_string("{input_escaped}")
+{chr(10).join(op_lines)}
   {assert_fn}({has_call})
 }}''')
                 test_idx += 1
