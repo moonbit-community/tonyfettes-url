@@ -4,7 +4,7 @@ This file provides guidance to code agents (Claude Code, Codex, etc.) when worki
 
 ## Project Overview
 
-WHATWG URL Standard parser implementation in MoonBit. Parses and serializes URLs according to https://url.spec.whatwg.org/ with web-platform-tests (WPT) compliance.
+WHATWG URL Standard parser implementation in MoonBit. Parses and serializes URLs according to <https://url.spec.whatwg.org/> with web-platform-tests (WPT) compliance.
 
 ## Build Commands
 
@@ -12,6 +12,20 @@ WHATWG URL Standard parser implementation in MoonBit. Parses and serializes URLs
 moon check      # Type check and lint
 moon test       # Run all tests
 moon build      # Build the project
+```
+
+### Running a Single Test
+
+```bash
+moon test -p tonyfettes/url -f url_test.mbt -i 0   # Run first test in url_test.mbt
+moon test -F "test_name_pattern"                    # Run tests matching glob pattern
+```
+
+### Publishing
+
+```bash
+python3 scripts/publish.py                          # Prepare clean publish directory
+cd publish && moon publish                          # Publish to mooncakes registry
 ```
 
 ## Architecture
@@ -27,6 +41,7 @@ moon build      # Build the project
 ### Parser State Machine
 
 `Url::parse_basic()` in `url.mbt` implements a 16-state machine following the WHATWG spec:
+
 - States include SchemeStart, Scheme, Authority, Host, Port, Path, Query, Fragment
 - File URLs have special states (FileSlash, FileHost) for Windows drive letter handling
 - Uses `StringPointer` for cursor tracking and `StringBuilder` for buffering
@@ -43,6 +58,7 @@ moon build      # Build the project
 ### Percent-Encoding
 
 Different URL components use different encoding sets defined in `url.mbt`:
+
 - `userinfo_percent_encode_set` - username/password
 - `path_percent_encode_set` - path segments
 - `query_percent_encode_set` - query strings
@@ -54,7 +70,7 @@ Different URL components use different encoding sets defined in `url.mbt`:
 
 ## Dependencies
 
-- `tonyfettes/unicode` (v0.1.1): Provides IDNA support via `@idna.to_ascii()` for Punycode domain name conversion
+- `tonyfettes/unicode`: Provides IDNA support via `@idna.to_ascii()` for Punycode domain name conversion
 
 ## Testing
 
@@ -62,4 +78,4 @@ Different URL components use different encoding sets defined in `url.mbt`:
 - `whatwg_test.mbt`: Additional WHATWG compliance tests
 - Unit tests: `url_test.mbt`, `host_test.mbt`, `ipv4_test.mbt`, `ipv6_test.mbt`
 
-Regenerate WPT tests: `python3 scripts/gen_wpt_tests.py`
+Regenerate WPT tests: `python3 scripts/generate_wpt_tests.py`
