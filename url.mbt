@@ -499,6 +499,14 @@ pub impl Show for Url with output(self : Url, logger : &Logger) -> Unit {
 }
 
 ///|
+/// Serialize URL to JSON per WHATWG URL spec.
+/// See: https://url.spec.whatwg.org/#dom-url-tojson
+/// The toJSON() method returns the serialization of the URL.
+pub impl ToJson for Url with to_json(self : Url) -> Json {
+  self.to_string().to_json()
+}
+
+///|
 /// Remove all ASCII tab (0x09), LF (0x0A), and CR (0x0D) from the entire input
 fn remove_ascii_tab_or_newline(input : StringView) -> String {
   let output = StringBuilder::new()

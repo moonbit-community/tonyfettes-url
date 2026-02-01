@@ -94,3 +94,16 @@ test "Url relative resolution" {
   let relative = Url::parse("../d", base~)
   inspect(relative.to_string(), content="https://example.com/a/d")
 }
+
+///|
+test "Url::to_json" {
+  // Per WHATWG spec, toJSON() returns the serialization (same as href/toString)
+  let url = Url::parse("https://example.com/path?query=1#hash")
+  inspect(url.to_json(), content="String(\"https://example.com/path?query=1#hash\")")
+  // Test with all URL components
+  let full = Url::parse("https://user:pass@example.com:8080/path?q=1#frag")
+  inspect(
+    full.to_json(),
+    content="String(\"https://user:pass@example.com:8080/path?q=1#frag\")",
+  )
+}
