@@ -250,11 +250,74 @@ pub fn UrlSearchParams::set(
 }
 
 ///|
+/// Compare two strings by UTF-16 code unit order.
+/// WHATWG URL Standard requires sorting by "code unit less than".
+/// See: https://infra.spec.whatwg.org/#code-unit-less-than
+fn compare_utf16_code_units(a : String, b : String) -> Int {
+  let iter_a = a.iter()
+  let iter_b = b.iter()
+  while true {
+    let char_a = iter_a.next()
+    let char_b = iter_b.next()
+    match (char_a, char_b) {
+      (None, None) => return 0
+      (None, Some(_)) => return -1
+      (Some(_), None) => return 1
+      (Some(ca), Some(cb)) => {
+        let code_a = ca.to_int()
+        let code_b = cb.to_int()
+        // For BMP characters (< 0x10000), code point == code unit
+        // For supplementary characters, compare by high surrogate first
+        let (unit_a, next_a) : (Int, Int?) = if code_a >= 0x10000 {
+          // Compute high surrogate: 0xD800 + ((code - 0x10000) >> 10)
+          let high = 0xD800 + ((code_a - 0x10000) >> 10)
+          let low = 0xDC00 + ((code_a - 0x10000) & 0x3FF)
+          (high, Some(low))
+        } else {
+          (code_a, None)
+        }
+        let (unit_b, next_b) : (Int, Int?) = if code_b >= 0x10000 {
+          let high = 0xD800 + ((code_b - 0x10000) >> 10)
+          let low = 0xDC00 + ((code_b - 0x10000) & 0x3FF)
+          (high, Some(low))
+        } else {
+          (code_b, None)
+        }
+        // Compare first code units
+        if unit_a < unit_b {
+          return -1
+        }
+        if unit_a > unit_b {
+          return 1
+        }
+        // First units equal, compare second units if present
+        match (next_a, next_b) {
+          (Some(la), Some(lb)) =>
+            if la < lb {
+              return -1
+            } else if la > lb {
+              return 1
+            }
+          (Some(_), None) =>
+            // a has more code units for this character
+            return 1
+          (None, Some(_)) =>
+            // b has more code units for this character
+            return -1
+          (None, None) => ()
+        }
+      }
+    }
+  }
+  0 // unreachable
+}
+
+///|
 /// Sort all name-value pairs by name using stable sort.
+/// Uses UTF-16 code unit order per WHATWG URL Standard.
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-sort
 pub fn UrlSearchParams::sort(self : UrlSearchParams) -> Unit {
-  // Use stable sort by name (code unit order)
-  self.list.sort_by(fn(a, b) { a.0.compare(b.0) })
+  self.list.sort_by(fn(a, b) { compare_utf16_code_units(a.0, b.0) })
 }
 
 ///|
