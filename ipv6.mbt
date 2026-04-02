@@ -1,4 +1,10 @@
 ///|
+/// Hex characters for IPv6 serialization
+let hex_chars : FixedArray[Char] = [
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+]
+
+///|
 /// Represents an IPv6 address as 8 16-bit pieces
 struct IPv6(FixedArray[UInt16])
 
@@ -55,10 +61,6 @@ pub fn IPv6::to_string(self : IPv6) -> String {
     if value == 0 {
       result.write_char('0')
     } else {
-      let hex_chars : FixedArray[Char] = [
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e',
-        'f',
-      ]
       let mut started = false
       for shift = 12; shift >= 0; shift = shift - 4 {
         let digit = (value >> shift) & 0xf
@@ -163,7 +165,7 @@ pub fn IPv6::parse(input : StringView) -> IPv6 raise ValidationError {
           }
           _ => break input
         }
-      } else {
+      } nobreak {
         input
       }
       let remaining = match remaining {

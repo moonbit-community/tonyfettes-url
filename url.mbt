@@ -1,7 +1,9 @@
 ///|
-/// Represents a parsed URL per the WHATWG URL Standard.
-/// See: https://url.spec.whatwg.org/#url-representation
-/// Contains scheme, credentials (username/password), host, port, path, query, and fragment.
+/// Represents a parsed URL per the WHATWG URL Standard. See:
+/// https://url.spec.whatwg.org/#url-representation
+///
+/// Contains scheme, credentials (username/password), host, port, path, query,
+/// and fragment.
 pub struct Url {
   mut scheme : String
   mut username : String
