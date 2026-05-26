@@ -212,7 +212,7 @@ test "UrlSearchParams Show trait" {
 ///|
 test "UrlSearchParams ToJson trait" {
   let params = UrlSearchParams::from_string("foo=bar")
-  inspect(params.to_json(), content="String(\"foo=bar\")")
+  inspect(params.to_json().stringify(), content="\"foo=bar\"")
 }
 
 ///|

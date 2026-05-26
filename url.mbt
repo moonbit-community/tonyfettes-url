@@ -45,7 +45,23 @@ pub fn Url::try_parse(
 ///|
 pub suberror ValidationErrors {
   ValidationErrors(Array[ValidationError])
-} derive(Show, Debug)
+} derive(Debug)
+
+///|
+pub impl Show for ValidationErrors with fn output(self, logger) {
+  match self {
+    ValidationErrors(errors) => {
+      logger.write_string("ValidationErrors([")
+      for index, error in errors {
+        if index > 0 {
+          logger.write_string(", ")
+        }
+        error.output(logger)
+      }
+      logger.write_string("])")
+    }
+  }
+}
 
 ///|
 #as_free_fn
@@ -521,7 +537,7 @@ pub fn Url::set_hash(self : Url, hash : String) -> Unit {
 
 ///|
 /// Implement Show trait for Url, outputting the serialized URL string
-pub impl Show for Url with output(self : Url, logger : &Logger) -> Unit {
+pub impl Show for Url with fn output(self : Url, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
@@ -529,7 +545,7 @@ pub impl Show for Url with output(self : Url, logger : &Logger) -> Unit {
 /// Serialize URL to JSON per WHATWG URL spec.
 /// See: https://url.spec.whatwg.org/#dom-url-tojson
 /// The toJSON() method returns the serialization of the URL.
-pub impl ToJson for Url with to_json(self : Url) -> Json {
+pub impl ToJson for Url with fn to_json(self : Url) -> Json {
   self.to_string().to_json()
 }
 
@@ -583,14 +599,18 @@ fn encode_last_trailing_space(s : String) -> String {
 /// Trim leading and trailing C0 control (U+0000-U+001F) or space (U+0020) from input
 fn trim_c0_control_or_space(input : StringView) -> StringView {
   // Trim from start
-  let input = loop input {
-    ['\u{0000}'..='\u{0020}', .. rest] => continue rest
-    input => break input
+  let input = for input = input {
+    match input {
+      ['\u{0000}'..='\u{0020}', .. rest] => continue rest
+      input => break input
+    }
   }
   // Trim from end
-  let input = loop input {
-    [.. rest, '\u{0000}'..='\u{0020}'] => continue rest
-    input => break input
+  let input = for input = input {
+    match input {
+      [.. rest, '\u{0000}'..='\u{0020}'] => continue rest
+      input => break input
+    }
   }
   input
 }

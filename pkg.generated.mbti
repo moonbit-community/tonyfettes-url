@@ -8,16 +8,13 @@ import {
 // Values
 
 // Errors
-type ValidationError
+type ValidationError derive(ToJson, @debug.Debug)
 pub impl Show for ValidationError
-pub impl ToJson for ValidationError
-pub impl @debug.Debug for ValidationError
 
 pub suberror ValidationErrors {
   ValidationErrors(Array[ValidationError])
-}
+} derive(@debug.Debug)
 pub impl Show for ValidationErrors
-pub impl @debug.Debug for ValidationErrors
 
 // Types and methods
 pub enum Host {
@@ -25,12 +22,11 @@ pub enum Host {
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-}
+} derive(ToJson)
 pub fn Host::parse(StringView, is_opaque? : Bool) -> Self raise ValidationError
 pub fn Host::to_string(Self) -> String
 pub fn Host::to_unicode(Self) -> String
 pub impl Show for Host
-pub impl ToJson for Host
 
 type IPv4
 pub fn IPv4::parse(StringView) -> Self raise ValidationError

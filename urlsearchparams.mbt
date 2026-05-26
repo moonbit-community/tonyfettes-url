@@ -31,7 +31,7 @@ pub fn UrlSearchParams::from_string(input : String) -> UrlSearchParams {
 ///|
 /// Create UrlSearchParams from an array of (name, value) pairs.
 pub fn UrlSearchParams::from_pairs(
-  pairs : Array[(String, String)]
+  pairs : Array[(String, String)],
 ) -> UrlSearchParams {
   UrlSearchParams::{ list: pairs.copy() }
 }
@@ -50,7 +50,10 @@ fn urlencoded_percent_encode_set(char : Char) -> Bool {
 ///|
 /// Parse application/x-www-form-urlencoded input.
 /// See: https://url.spec.whatwg.org/#concept-urlencoded-parser
-fn urlencoded_parse(input : StringView, output : Array[(String, String)]) -> Unit {
+fn urlencoded_parse(
+  input : StringView,
+  output : Array[(String, String)],
+) -> Unit {
   // 1. Let sequences be the result of splitting input on `&`.
   for sequence in input.split("&") {
     // 2. For each byte sequence bytes in sequences:
@@ -153,7 +156,7 @@ pub fn UrlSearchParams::size(self : UrlSearchParams) -> Int {
 pub fn UrlSearchParams::append(
   self : UrlSearchParams,
   name : String,
-  value : String
+  value : String,
 ) -> Unit {
   self.list.push((name, value))
 }
@@ -165,7 +168,7 @@ pub fn UrlSearchParams::append(
 pub fn UrlSearchParams::delete(
   self : UrlSearchParams,
   name : String,
-  value? : String
+  value? : String,
 ) -> Unit {
   match value {
     Some(v) =>
@@ -191,7 +194,7 @@ pub fn UrlSearchParams::get(self : UrlSearchParams, name : String) -> String? {
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-getall
 pub fn UrlSearchParams::get_all(
   self : UrlSearchParams,
-  name : String
+  name : String,
 ) -> Array[String] {
   let result : Array[String] = []
   for pair in self.list {
@@ -209,7 +212,7 @@ pub fn UrlSearchParams::get_all(
 pub fn UrlSearchParams::has(
   self : UrlSearchParams,
   name : String,
-  value? : String
+  value? : String,
 ) -> Bool {
   match value {
     Some(v) => self.list.iter().any(fn(pair) { pair.0 == name && pair.1 == v })
@@ -225,7 +228,7 @@ pub fn UrlSearchParams::has(
 pub fn UrlSearchParams::set(
   self : UrlSearchParams,
   name : String,
-  value : String
+  value : String,
 ) -> Unit {
   // Find first matching pair
   let mut found = false
@@ -323,9 +326,7 @@ pub fn UrlSearchParams::sort(self : UrlSearchParams) -> Unit {
 ///|
 /// Iterate over all (name, value) pairs.
 /// See: https://url.spec.whatwg.org/#urlsearchparams-iteration
-pub fn UrlSearchParams::iter(
-  self : UrlSearchParams
-) -> Iter[(String, String)] {
+pub fn UrlSearchParams::iter(self : UrlSearchParams) -> Iter[(String, String)] {
   self.list.iter()
 }
 
@@ -333,7 +334,7 @@ pub fn UrlSearchParams::iter(
 /// Iterate over all (name, value) pairs (alias for iter).
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-entries
 pub fn UrlSearchParams::entries(
-  self : UrlSearchParams
+  self : UrlSearchParams,
 ) -> Iter[(String, String)] {
   self.iter()
 }
@@ -354,15 +355,15 @@ pub fn UrlSearchParams::values(self : UrlSearchParams) -> Iter[String] {
 
 ///|
 /// Implement Show trait for UrlSearchParams, outputting the serialized string.
-pub impl Show for UrlSearchParams with output(
+pub impl Show for UrlSearchParams with fn output(
   self : UrlSearchParams,
-  logger : &Logger
+  logger : &Logger,
 ) -> Unit {
   logger.write_string(self.to_string())
 }
 
 ///|
 /// Serialize UrlSearchParams to JSON as a string.
-pub impl ToJson for UrlSearchParams with to_json(self : UrlSearchParams) -> Json {
+pub impl ToJson for UrlSearchParams with fn to_json(self : UrlSearchParams) -> Json {
   self.to_string().to_json()
 }

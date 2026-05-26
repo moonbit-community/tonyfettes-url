@@ -1,4 +1,7 @@
 ///|
+using @test {assert_eq}
+
+///|
 test "Url::parse basic" {
   assert_eq(
     Url::parse(
@@ -99,11 +102,14 @@ test "Url relative resolution" {
 test "Url::to_json" {
   // Per WHATWG spec, toJSON() returns the serialization (same as href/toString)
   let url = Url::parse("https://example.com/path?query=1#hash")
-  inspect(url.to_json(), content="String(\"https://example.com/path?query=1#hash\")")
+  inspect(
+    url.to_json().stringify(),
+    content="\"https://example.com/path?query=1#hash\"",
+  )
   // Test with all URL components
   let full = Url::parse("https://user:pass@example.com:8080/path?q=1#frag")
   inspect(
-    full.to_json(),
-    content="String(\"https://user:pass@example.com:8080/path?q=1#frag\")",
+    full.to_json().stringify(),
+    content="\"https://user:pass@example.com:8080/path?q=1#frag\"",
   )
 }

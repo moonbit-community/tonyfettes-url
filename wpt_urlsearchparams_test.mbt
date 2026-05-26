@@ -478,7 +478,9 @@ test "WPT URLSearchParams sort #0" {
 
 ///|
 test "WPT URLSearchParams sort #1" {
-  let params = @url.UrlSearchParams::from_string("\u{FFFD}=x&\u{FFFC}&\u{FFFD}=a")
+  let params = @url.UrlSearchParams::from_string(
+    "\u{FFFD}=x&\u{FFFC}&\u{FFFD}=a",
+  )
   params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [("\u{FFFC}", ""), ("\u{FFFD}", "x"), ("\u{FFFD}", "a")])
@@ -502,10 +504,27 @@ test "WPT URLSearchParams sort #3" {
 
 ///|
 test "WPT URLSearchParams sort #4" {
-  let params = @url.UrlSearchParams::from_string("z=z&a=a&z=y&a=b&z=x&a=c&z=w&a=d&z=v&a=e&z=u&a=f&z=t&a=g")
+  let params = @url.UrlSearchParams::from_string(
+    "z=z&a=a&z=y&a=b&z=x&a=c&z=w&a=d&z=v&a=e&z=u&a=f&z=t&a=g",
+  )
   params.sort()
   let pairs = params.iter().collect()
-  assert_eq(pairs, [("a", "a"), ("a", "b"), ("a", "c"), ("a", "d"), ("a", "e"), ("a", "f"), ("a", "g"), ("z", "z"), ("z", "y"), ("z", "x"), ("z", "w"), ("z", "v"), ("z", "u"), ("z", "t")])
+  assert_eq(pairs, [
+    ("a", "a"),
+    ("a", "b"),
+    ("a", "c"),
+    ("a", "d"),
+    ("a", "e"),
+    ("a", "f"),
+    ("a", "g"),
+    ("z", "z"),
+    ("z", "y"),
+    ("z", "x"),
+    ("z", "w"),
+    ("z", "v"),
+    ("z", "u"),
+    ("z", "t"),
+  ])
 }
 
 ///|
@@ -513,7 +532,13 @@ test "WPT URLSearchParams sort #5" {
   let params = @url.UrlSearchParams::from_string("bbb&bb&aaa&aa=x&aa=y")
   params.sort()
   let pairs = params.iter().collect()
-  assert_eq(pairs, [("aa", "x"), ("aa", "y"), ("aaa", ""), ("bb", ""), ("bbb", "")])
+  assert_eq(pairs, [
+    ("aa", "x"),
+    ("aa", "y"),
+    ("aaa", ""),
+    ("bb", ""),
+    ("bbb", ""),
+  ])
 }
 
 ///|
@@ -732,4 +757,3 @@ test "WPT URLSearchParams stringifier #24 - Serialize \\uD83D\\uDCA9" {
   params.append("a\u{1F4A9}b", "c")
   assert_eq(params.to_string(), "a%F0%9F%92%A9b=c")
 }
-

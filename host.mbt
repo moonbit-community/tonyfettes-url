@@ -22,7 +22,7 @@ pub fn Host::to_string(self : Host) -> String {
 
 ///|
 /// Implement Show trait for Host, outputting the serialized host string
-pub impl Show for Host with output(self : Host, logger : &Logger) -> Unit {
+pub impl Show for Host with fn output(self : Host, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
@@ -65,7 +65,36 @@ suberror ValidationError {
   InvalidReverseSolidus
   InvalidCredentials
   HostMissing
-} derive(ToJson, Show, Debug)
+} derive(ToJson, Debug)
+
+///|
+pub impl Show for ValidationError with fn output(self, logger) {
+  let message = match self {
+    DomainToAscii => "DomainToAscii"
+    HostInvalidCodePoint => "HostInvalidCodePoint"
+    IPv4EmptyPart => "IPv4EmptyPart"
+    IPv4TooManyParts => "IPv4TooManyParts"
+    IPv4NonNumericPart => "IPv4NonNumericPart"
+    IPv4OutOfRangePart => "IPv4OutOfRangePart"
+    IPv6InvalidCompression => "IPv6InvalidCompression"
+    IPv6MultipleCompression => "IPv6MultipleCompression"
+    IPv6TooManyPieces => "IPv6TooManyPieces"
+    IPv6InvalidCodePoint => "IPv6InvalidCodePoint"
+    IPv6TooFewPieces => "IPv6TooFewPieces"
+    IPv6Unclosed => "IPv6Unclosed"
+    IPv4InIPv6InvalidCodePoint => "IPv4InIPv6InvalidCodePoint"
+    IPv4InIPv6TooManyPieces => "IPv4InIPv6TooManyPieces"
+    IPv4InIPv6OutOfRangePart => "IPv4InIPv6OutOfRangePart"
+    IPv4InIPv6TooFewParts => "IPv4InIPv6TooFewParts"
+    MissingSchemeNonRelativeUrl => "MissingSchemeNonRelativeUrl"
+    SpecialSchemeMissingFollowingSolidus =>
+      "SpecialSchemeMissingFollowingSolidus"
+    InvalidReverseSolidus => "InvalidReverseSolidus"
+    InvalidCredentials => "InvalidCredentials"
+    HostMissing => "HostMissing"
+  }
+  logger.write_string(message)
+}
 
 ///|
 fn percent_decode_string(input : StringView) -> Bytes {
@@ -75,36 +104,38 @@ fn percent_decode_string(input : StringView) -> Bytes {
 
 ///|
 fn percent_decode_bytes(input : Bytes) -> Bytes {
-  let output = @buffer.new()
-  loop input[:] {
-    ['%', c0, c1, .. rest] as view => {
-      let b0 = match c0 {
-        '0'..='9' => c0.to_int() - '0'.to_int()
-        'a'..='f' => c0.to_int() - 'a'.to_int() + 10
-        'A'..='F' => c0.to_int() - 'A'.to_int() + 10
-        _ => {
-          output.write_byte('%')
-          continue view[1:]
+  let output = Buffer()
+  for view = input[:] {
+    match view {
+      [b'%', c0, c1, .. rest] => {
+        let b0 = match c0 {
+          b'0'..=b'9' => c0.to_int() - b'0'.to_int()
+          b'a'..=b'f' => c0.to_int() - b'a'.to_int() + 10
+          b'A'..=b'F' => c0.to_int() - b'A'.to_int() + 10
+          _ => {
+            output.write_byte(b'%')
+            continue view[1:]
+          }
         }
-      }
-      let b1 = match c1 {
-        '0'..='9' => c1.to_int() - '0'.to_int()
-        'a'..='f' => c1.to_int() - 'a'.to_int() + 10
-        'A'..='F' => c1.to_int() - 'A'.to_int() + 10
-        _ => {
-          output.write_byte('%')
-          output.write_byte(c0)
-          continue view[2:]
+        let b1 = match c1 {
+          b'0'..=b'9' => c1.to_int() - b'0'.to_int()
+          b'a'..=b'f' => c1.to_int() - b'a'.to_int() + 10
+          b'A'..=b'F' => c1.to_int() - b'A'.to_int() + 10
+          _ => {
+            output.write_byte(b'%')
+            output.write_byte(c0)
+            continue view[2:]
+          }
         }
+        output.write_byte(((b0 << 4) | b1).to_byte())
+        continue rest
       }
-      output.write_byte(((b0 << 4) | b1).to_byte())
-      continue rest
+      [byte, .. rest] => {
+        output.write_byte(byte)
+        continue rest
+      }
+      [] => break
     }
-    [byte, .. rest] => {
-      output.write_byte(byte)
-      continue rest
-    }
-    [] => break
   }
   output.contents()
 }
@@ -426,7 +457,7 @@ fn utf8_percent_encode(
   let output = StringBuilder::new()
   let encode_output = @encoding/utf8.encode(input)
   for byte in encode_output {
-    if space_as_plus && byte is ' ' {
+    if space_as_plus && byte is b' ' {
       output.write_char('+')
       continue
     }
