@@ -1,4 +1,7 @@
 ///|
+using @test {assert_eq}
+
+///|
 test "ends_in_a_number" {
   assert_eq(ends_in_a_number("example.com.123"), true)
   assert_eq(ends_in_a_number("example.com.abc"), false)

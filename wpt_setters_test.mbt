@@ -361,9 +361,17 @@ test "WPT setters username #7" {
 ///|
 test "WPT setters username #8" {
   let url = @url.Url::parse("http://example.net")
-  url.set_username("\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}")
-  assert_eq(url.href(), "http://%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9@example.net/")
-  assert_eq(url.username(), "%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9")
+  url.set_username(
+    "\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}",
+  )
+  assert_eq(
+    url.href(),
+    "http://%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9@example.net/",
+  )
+  assert_eq(
+    url.username(),
+    "%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
 }
 
 ///|
@@ -457,9 +465,17 @@ test "WPT setters password #6" {
 ///|
 test "WPT setters password #7" {
   let url = @url.Url::parse("http://example.net")
-  url.set_password("\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}")
-  assert_eq(url.href(), "http://:%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9@example.net/")
-  assert_eq(url.password(), "%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9")
+  url.set_password(
+    "\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}",
+  )
+  assert_eq(
+    url.href(),
+    "http://:%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9@example.net/",
+  )
+  assert_eq(
+    url.password(),
+    "%00%01%09%0A%0D%1F%20!%22%23$%&'()*+,-.%2F09%3A%3B%3C%3D%3E%3F%40AZ%5B%5C%5D%5E_%60az%7B%7C%7D~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
 }
 
 ///|
@@ -1912,16 +1928,27 @@ test "WPT setters pathname #11" {
 test "WPT setters pathname #12" {
   let url = @url.Url::parse("view-source+http://example.net/home?lang=fr#nav")
   url.set_pathname("\\a\\%2E\\b\\%2e.\\c")
-  assert_eq(url.href(), "view-source+http://example.net/\\a\\%2E\\b\\%2e.\\c?lang=fr#nav")
+  assert_eq(
+    url.href(),
+    "view-source+http://example.net/\\a\\%2E\\b\\%2e.\\c?lang=fr#nav",
+  )
   assert_eq(url.pathname(), "/\\a\\%2E\\b\\%2e.\\c")
 }
 
 ///|
 test "WPT setters pathname #13" {
   let url = @url.Url::parse("a:/")
-  url.set_pathname("\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}")
-  assert_eq(url.href(), "a:/%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E%3F@AZ[\\]%5E_%60az%7B|%7D~%7F%C2%80%C2%81%C3%89%C3%A9")
-  assert_eq(url.pathname(), "/%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E%3F@AZ[\\]%5E_%60az%7B|%7D~%7F%C2%80%C2%81%C3%89%C3%A9")
+  url.set_pathname(
+    "\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}",
+  )
+  assert_eq(
+    url.href(),
+    "a:/%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E%3F@AZ[\\]%5E_%60az%7B|%7D~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
+  assert_eq(
+    url.pathname(),
+    "/%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E%3F@AZ[\\]%5E_%60az%7B|%7D~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
 }
 
 ///|
@@ -2143,9 +2170,17 @@ test "WPT setters search #7" {
 ///|
 test "WPT setters search #8" {
   let url = @url.Url::parse("a:/")
-  url.set_search("\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}")
-  assert_eq(url.href(), "a:/?%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_`az{|}~%7F%C2%80%C2%81%C3%89%C3%A9")
-  assert_eq(url.search(), "?%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_`az{|}~%7F%C2%80%C2%81%C3%89%C3%A9")
+  url.set_search(
+    "\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}",
+  )
+  assert_eq(
+    url.href(),
+    "a:/?%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_`az{|}~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
+  assert_eq(
+    url.search(),
+    "?%00%01%1F%20!%22%23$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_`az{|}~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
 }
 
 ///|
@@ -2297,9 +2332,17 @@ test "WPT setters hash #10" {
 ///|
 test "WPT setters hash #11" {
   let url = @url.Url::parse("a:/")
-  url.set_hash("\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}")
-  assert_eq(url.href(), "a:/#%00%01%1F%20!%22#$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_%60az{|}~%7F%C2%80%C2%81%C3%89%C3%A9")
-  assert_eq(url.hash(), "#%00%01%1F%20!%22#$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_%60az{|}~%7F%C2%80%C2%81%C3%89%C3%A9")
+  url.set_hash(
+    "\u{0}\u{1}\t\n\r\u{1F} !\"#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~\u{7F}\u{80}\u{81}\u{C9}\u{E9}",
+  )
+  assert_eq(
+    url.href(),
+    "a:/#%00%01%1F%20!%22#$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_%60az{|}~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
+  assert_eq(
+    url.hash(),
+    "#%00%01%1F%20!%22#$%&'()*+,-./09:;%3C=%3E?@AZ[\\]^_%60az{|}~%7F%C2%80%C2%81%C3%89%C3%A9",
+  )
 }
 
 ///|
@@ -2336,10 +2379,18 @@ test "WPT setters hash #15" {
 
 ///|
 test "WPT setters hash #16" {
-  let url = @url.Url::parse("data:space                                                                                                                                  #fragment")
+  let url = @url.Url::parse(
+    "data:space                                                                                                                                  #fragment",
+  )
   url.set_hash("")
-  assert_eq(url.href(), "data:space                                                                                                                                 %20")
-  assert_eq(url.pathname(), "space                                                                                                                                 %20")
+  assert_eq(
+    url.href(),
+    "data:space                                                                                                                                 %20",
+  )
+  assert_eq(
+    url.pathname(),
+    "space                                                                                                                                 %20",
+  )
   assert_eq(url.hash(), "")
 }
 
@@ -2383,4 +2434,3 @@ test "WPT setters hash #21" {
   assert_eq(url.href(), "http://example.net/#%00")
   assert_eq(url.hash(), "#%00")
 }
-

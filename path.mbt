@@ -24,7 +24,7 @@ pub fn Path::to_string(self : Path) -> String {
 }
 
 ///|
-pub impl Show for Path with output(self : Path, logger : &Logger) -> Unit {
+pub impl Show for Path with fn output(self : Path, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
