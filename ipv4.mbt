@@ -1,7 +1,7 @@
 ///|
 /// Represents an IPv4 address as a 32-bit unsigned integer.
 /// See: https://url.spec.whatwg.org/#concept-ipv4
-struct IPv4(UInt)
+struct IPv4(UInt) derive(Debug)
 
 ///|
 /// Serialize IPv4 address to dotted-decimal notation (e.g., "192.168.1.1").
@@ -167,10 +167,18 @@ fn IPv4::parse_number(input : StringView) -> UInt64 raise ValidationError {
 ///|
 test "IPv4::parse" {
   let inputs = ["127.0.0.1", "0xffffffff"]
-  json_inspect(inputs.map(input => try? IPv4::parse(input)), content=[
-    { "Ok": [127, 0, 0, 1] },
-    { "Ok": [255, 255, 255, 255] },
-  ])
+  debug_inspect(
+    inputs.map(input => {
+      try IPv4::parse(input) catch {
+        err => Err(err)
+      } noraise {
+        ipv4 => Ok(ipv4)
+      }
+    }),
+    content=(
+      #|[Ok(IPv4(2130706433)), Ok(IPv4(4294967295))]
+    ),
+  )
 }
 
 ///|
@@ -178,7 +186,14 @@ test "IPv4::parse_number" {
   json_inspect(IPv4::parse_number("255"), content="255")
   json_inspect(IPv4::parse_number("0xff"), content="255")
   json_inspect(IPv4::parse_number("0377"), content="255")
-  json_inspect(try? IPv4::parse_number("09"), content={
-    "Err": "IPv4NonNumericPart",
-  })
+  debug_inspect(
+    try IPv4::parse_number("09") catch {
+      err => Err(err)
+    } noraise {
+      number => Ok(number)
+    },
+    content=(
+      #|Err(IPv4NonNumericPart)
+    ),
+  )
 }

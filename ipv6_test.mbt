@@ -6,24 +6,35 @@ test "IPv6::parse" {
     "ffff::127.0.xyz.1", "ffff::127.0xyz", "ffff::127.00.0.1", "ffff::127.0.0.1.2",
     "ffff::127.0.0.4000", "ffff::127.0.0",
   ]
-  json_inspect(inputs.map(input => try? IPv6::parse(input)), content=[
-    { "Ok": [0, 0, 0, 0, 0, 0, 0, 1] },
-    { "Ok": [8193, 3512, 0, 0, 0, 0, 0, 1] },
-    { "Ok": [0, 0, 0, 0, 0, 65535, 49152, 513] },
-    { "Ok": [0, 0, 0, 0, 0, 43981, 49152, 513] },
-    { "Err": "IPv6InvalidCompression" },
-    { "Err": "IPv6TooManyPieces" },
-    { "Err": "IPv6MultipleCompression" },
-    { "Err": "IPv6InvalidCodePoint" },
-    { "Err": "IPv6InvalidCodePoint" },
-    { "Err": "IPv6TooFewPieces" },
-    { "Err": "IPv4InIPv6TooManyPieces" },
-    { "Err": "IPv4InIPv6InvalidCodePoint" },
-    { "Err": "IPv4InIPv6InvalidCodePoint" },
-    { "Err": "IPv4InIPv6InvalidCodePoint" },
-    { "Err": "IPv4InIPv6InvalidCodePoint" },
-    { "Err": "IPv4InIPv6InvalidCodePoint" },
-    { "Err": "IPv4InIPv6OutOfRangePart" },
-    { "Err": "IPv4InIPv6TooFewParts" },
-  ])
+  debug_inspect(
+    inputs.map(input => {
+      try IPv6::parse(input) catch {
+        err => Err(err)
+      } noraise {
+        ipv6 => Ok(ipv6)
+      }
+    }),
+    content=(
+      #|[
+      #|  Ok(IPv6(<FixedArray: [0, 0, 0, 0, 0, 0, 0, 1]>)),
+      #|  Ok(IPv6(<FixedArray: [8193, 3512, 0, 0, 0, 0, 0, 1]>)),
+      #|  Ok(IPv6(<FixedArray: [0, 0, 0, 0, 0, 65535, 49152, 513]>)),
+      #|  Ok(IPv6(<FixedArray: [0, 0, 0, 0, 0, 43981, 49152, 513]>)),
+      #|  Err(IPv6InvalidCompression),
+      #|  Err(IPv6TooManyPieces),
+      #|  Err(IPv6MultipleCompression),
+      #|  Err(IPv6InvalidCodePoint),
+      #|  Err(IPv6InvalidCodePoint),
+      #|  Err(IPv6TooFewPieces),
+      #|  Err(IPv4InIPv6TooManyPieces),
+      #|  Err(IPv4InIPv6InvalidCodePoint),
+      #|  Err(IPv4InIPv6InvalidCodePoint),
+      #|  Err(IPv4InIPv6InvalidCodePoint),
+      #|  Err(IPv4InIPv6InvalidCodePoint),
+      #|  Err(IPv4InIPv6InvalidCodePoint),
+      #|  Err(IPv4InIPv6OutOfRangePart),
+      #|  Err(IPv4InIPv6TooFewParts),
+      #|]
+    ),
+  )
 }
