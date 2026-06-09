@@ -2,43 +2,46 @@
 using @test {assert_eq}
 
 ///|
-test "Url::parse basic" {
+test "parse basic" {
   assert_eq(
-    Url::parse(
+    @url.Url::parse(
       "https://user:pass@example.com:8080/path/to/resource?query=value#fragment",
     ).to_string(),
     "https://user:pass@example.com:8080/path/to/resource?query=value#fragment",
   )
-  assert_eq(Url::parse("http://example.com").to_string(), "http://example.com/")
   assert_eq(
-    Url::parse("ftp://ftp.example.com/pub/file.txt").to_string(),
+    @url.Url::parse("http://example.com").to_string(),
+    "http://example.com/",
+  )
+  assert_eq(
+    @url.Url::parse("ftp://ftp.example.com/pub/file.txt").to_string(),
     "ftp://ftp.example.com/pub/file.txt",
   )
   assert_eq(
-    Url::parse("file:///C:/path/to/file.txt").to_string(),
+    @url.Url::parse("file:///C:/path/to/file.txt").to_string(),
     "file:///C:/path/to/file.txt",
   )
 }
 
 ///|
-test "Url::parse special schemes" {
+test "parse special schemes" {
   assert_eq(
-    Url::parse("http://example.com:80").to_string(),
+    @url.Url::parse("http://example.com:80").to_string(),
     "http://example.com/",
   )
   assert_eq(
-    Url::parse("https://example.com:443").to_string(),
+    @url.Url::parse("https://example.com:443").to_string(),
     "https://example.com/",
   )
   assert_eq(
-    Url::parse("https://example.com:8080").to_string(),
+    @url.Url::parse("https://example.com:8080").to_string(),
     "https://example.com:8080/",
   )
 }
 
 ///|
 test "Url getters" {
-  let url = Url::parse(
+  let url = @url.Url::parse(
     "https://user:pass@example.com:8080/path/to/resource?query=value#fragment",
   )
   inspect(url.protocol(), content="https:")
@@ -55,7 +58,7 @@ test "Url getters" {
 
 ///|
 test "Url setters" {
-  let url = Url::parse("http://example.com/path")
+  let url = @url.Url::parse("http://example.com/path")
   url.set_protocol("https:")
   inspect(url.protocol(), content="https:")
   url.set_username("newuser")
@@ -75,16 +78,16 @@ test "Url setters" {
 ///|
 test "Url::origin" {
   // Special schemes have origin
-  let http = Url::parse("http://example.com:8080/")
+  let http = @url.Url::parse("http://example.com:8080/")
   inspect(http.origin(), content="http://example.com:8080")
   // file: URLs have null origin
-  let file = Url::parse("file:///path/to/file")
+  let file = @url.Url::parse("file:///path/to/file")
   inspect(file.origin(), content="null")
 }
 
 ///|
 test "Url with IPv6 host" {
-  let url = Url::parse("http://[::1]:8080/path")
+  let url = @url.Url::parse("http://[::1]:8080/path")
   inspect(url.hostname(), content="[::1]")
   inspect(url.port(), content="8080")
   inspect(url.to_string(), content="http://[::1]:8080/path")
@@ -92,22 +95,22 @@ test "Url with IPv6 host" {
 
 ///|
 test "Url relative resolution" {
-  let base = Url::parse("https://example.com/a/b/c")
+  let base = @url.Url::parse("https://example.com/a/b/c")
   // Test relative URL with base
-  let relative = Url::parse("../d", base~)
+  let relative = @url.Url::parse("../d", base~)
   inspect(relative.to_string(), content="https://example.com/a/d")
 }
 
 ///|
 test "Url::to_json" {
   // Per WHATWG spec, toJSON() returns the serialization (same as href/toString)
-  let url = Url::parse("https://example.com/path?query=1#hash")
+  let url = @url.Url::parse("https://example.com/path?query=1#hash")
   inspect(
     url.to_json().stringify(),
     content="\"https://example.com/path?query=1#hash\"",
   )
   // Test with all URL components
-  let full = Url::parse("https://user:pass@example.com:8080/path?q=1#frag")
+  let full = @url.Url::parse("https://user:pass@example.com:8080/path?q=1#frag")
   inspect(
     full.to_json().stringify(),
     content="\"https://user:pass@example.com:8080/path?q=1#frag\"",

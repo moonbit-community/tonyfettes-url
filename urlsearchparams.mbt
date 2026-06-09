@@ -10,7 +10,7 @@ pub struct UrlSearchParams {
 ///|
 /// Create a new empty UrlSearchParams instance.
 pub fn UrlSearchParams::new() -> UrlSearchParams {
-  UrlSearchParams::{ list: [] }
+  { list: [] }
 }
 
 ///|
@@ -33,7 +33,7 @@ pub fn UrlSearchParams::from_string(input : String) -> UrlSearchParams {
 pub fn UrlSearchParams::from_pairs(
   pairs : Array[(String, String)],
 ) -> UrlSearchParams {
-  UrlSearchParams::{ list: pairs.copy() }
+  { list: pairs.copy() }
 }
 
 ///|

@@ -1,5 +1,5 @@
 ///|
-test "Host::parse IDNA" {
+test "@url.Host::parse IDNA" {
   // Test internationalized domain names
   let idn_inputs = [
     "münchen.de", // German umlaut
@@ -8,7 +8,7 @@ test "Host::parse IDNA" {
   ] // ASCII passthrough
   debug_inspect(
     idn_inputs.map(input => {
-      try Host::parse(input) catch {
+      try @url.Host::parse(input) catch {
         err => Err(err)
       } noraise {
         host => Ok(host)
@@ -25,7 +25,7 @@ test "Host::parse IDNA" {
 }
 
 ///|
-test "Host::to_unicode" {
+test "@url.Host::to_unicode" {
   // Test Unicode conversion for display
   // Parse Unicode domains first, which get converted to Punycode internally,
   // then convert back to Unicode for display
@@ -34,20 +34,20 @@ test "Host::to_unicode" {
      "中文.com", // Chinese
      "example.com",
   ] // ASCII passthrough
-  json_inspect(inputs.map(input => Host::parse(input).to_unicode()), content=[
+  json_inspect(inputs.map(input => @url.Host::parse(input).to_unicode()), content=[
     "münchen.de", "中文.com", "example.com",
   ])
 }
 
 ///|
-test "Host::parse" {
+test "@url.Host::parse" {
   let inputs = [
     "EXAMPLE.com", "example%2Ecom", "0", "%30", "0x", "0xffffffff", "[0:0::1]", "[0:0::1%5D",
     "[0:0::%31]", "09", "example.255", "example^example",
   ]
   debug_inspect(
     inputs.map(input => {
-      try Host::parse(input) catch {
+      try @url.Host::parse(input) catch {
         err => Err(err)
       } noraise {
         host => Ok(host)

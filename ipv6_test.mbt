@@ -1,5 +1,5 @@
 ///|
-test "IPv6::parse" {
+test "@url.IPv6::parse" {
   let inputs = [
     "::1", "2001:db8::1", "::ffff:192.0.2.1", "::ABCD:192.0.2.1", ":1", "1:2:3:4:5:6:7:8:9",
     "1::1::1", "1:2:3!:4", "1:2:3:", "1:2:3", "1:1:1:1:1:1:1:127.0.0.1", "ffff::.0.0.1",
@@ -8,7 +8,7 @@ test "IPv6::parse" {
   ]
   debug_inspect(
     inputs.map(input => {
-      try IPv6::parse(input) catch {
+      try @url.IPv6::parse(input) catch {
         err => Err(err)
       } noraise {
         ipv6 => Ok(ipv6)
