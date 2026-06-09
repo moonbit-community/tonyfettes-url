@@ -7,7 +7,7 @@ pub enum Host {
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-} derive(ToJson)
+} derive(ToJson, Debug)
 
 ///|
 /// Serialize host per WHATWG URL spec

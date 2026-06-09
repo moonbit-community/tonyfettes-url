@@ -22,19 +22,19 @@ pub enum Host {
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-} derive(ToJson)
+} derive(ToJson, @debug.Debug)
 pub fn Host::parse(StringView, is_opaque? : Bool) -> Self raise ValidationError
 pub fn Host::to_string(Self) -> String
 pub fn Host::to_unicode(Self) -> String
 pub impl Show for Host
 
-type IPv4
+type IPv4 derive(@debug.Debug)
 pub fn IPv4::parse(StringView) -> Self raise ValidationError
 pub fn IPv4::to_string(Self) -> String
 pub impl Show for IPv4
 pub impl ToJson for IPv4
 
-type IPv6
+type IPv6 derive(@debug.Debug)
 pub fn IPv6::parse(StringView) -> Self raise ValidationError
 pub fn IPv6::to_string(Self) -> String
 pub impl Show for IPv6
