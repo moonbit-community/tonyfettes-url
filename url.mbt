@@ -18,7 +18,7 @@ pub struct Url {
 ///|
 /// Create a new empty URL
 fn Url::new() -> Url {
-  Url::{
+  {
     scheme: "",
     username: "",
     password: "",
@@ -326,7 +326,7 @@ fn Url::parse_with_state(
 /// 2. If parsedURL is failure, then throw a TypeError.
 /// 3. Set this's URL to parsedURL.
 pub fn Url::set_href(self : Url, href : String) -> Unit raise ValidationErrors {
-  let parsed = Url::parse(href)
+  let parsed = parse(href)
   self.scheme = parsed.scheme
   self.username = parsed.username
   self.password = parsed.password
@@ -698,7 +698,7 @@ priv struct StringPointer {
 
 ///|
 fn StringPointer::new(input : StringView) -> StringPointer {
-  StringPointer::{ input, pointer: input.start_offset() }
+  { input, pointer: input.start_offset() }
 }
 
 ///|
@@ -1167,7 +1167,7 @@ fn Url::parse_basic(
               return None
             }
             if buffer.is_empty() {
-              url.host = Some(Host::Opaque(""))
+              url.host = Some(Opaque(""))
             } else {
               let host = Host::parse(
                 buffer.to_string(),
@@ -1510,7 +1510,7 @@ fn Url::parse_basic(
             }
           } else {
             // No base or base is not file scheme - set empty host for proper file:/// serialization
-            url.host = Some(Host::Opaque(""))
+            url.host = Some(Opaque(""))
             state = Path
             continue view // Re-process same character in Path
           }
@@ -1548,7 +1548,7 @@ fn Url::parse_basic(
               }
             } else {
               // No base - set empty host for proper file:/// serialization
-              url.host = Some(Host::Opaque(""))
+              url.host = Some(Opaque(""))
             }
             state = Path
             continue view // Re-process same character in Path
@@ -1576,7 +1576,7 @@ fn Url::parse_basic(
                   state = Path
                 _ =>
                   if buffer_str.is_empty() {
-                    url.host = Some(Host::Opaque(""))
+                    url.host = Some(Opaque(""))
                     state = PathStart
                   } else {
                     let host = Host::parse(buffer_str) catch {
@@ -1586,7 +1586,7 @@ fn Url::parse_basic(
                       }
                     }
                     if host is Domain("localhost") {
-                      url.host = Some(Host::Opaque(""))
+                      url.host = Some(Opaque(""))
                     } else {
                       url.host = Some(host)
                     }
@@ -1595,7 +1595,7 @@ fn Url::parse_basic(
                   }
               }
             } else if buffer_str.is_empty() {
-              url.host = Some(Host::Opaque(""))
+              url.host = Some(Opaque(""))
               state = PathStart
             } else {
               let host = Host::parse(buffer_str) catch {
@@ -1605,7 +1605,7 @@ fn Url::parse_basic(
                 }
               }
               if host is Domain("localhost") {
-                url.host = Some(Host::Opaque(""))
+                url.host = Some(Opaque(""))
               } else {
                 url.host = Some(host)
               }
@@ -1655,7 +1655,7 @@ fn Url::parse_basic(
             validation_errors.push(HostMissing)
             return None
           }
-          url.host = Some(Host::Opaque(""))
+          url.host = Some(Opaque(""))
         } else {
           // Check for host:port pattern
           // For IPv6 addresses like [2001::1]:80, the port separator is after the closing ]
@@ -1778,7 +1778,7 @@ fn Url::parse_basic(
           }
           url.host = Some(host)
         } else if !url.is_special() {
-          url.host = Some(Host::Opaque(""))
+          url.host = Some(Opaque(""))
         }
       }
       Port =>
@@ -1870,7 +1870,7 @@ fn Url::parse_basic(
         url.scheme = "file"
         let buffer_str = buffer.to_string()
         if buffer_str.is_empty() {
-          url.host = Some(Host::Opaque(""))
+          url.host = Some(Opaque(""))
         } else {
           // Check for Windows drive letter using explicit char access
           let is_drive_letter = buffer_str.length() == 2 &&
@@ -1884,7 +1884,7 @@ fn Url::parse_basic(
             })
           if is_drive_letter {
             // Windows drive letter in host position (normalize | to :)
-            url.host = Some(Host::Opaque(""))
+            url.host = Some(Opaque(""))
             let letter = buffer_str.get_char(0).unwrap()
             url.path = Segments(["\{letter}:"])
           } else {
@@ -1895,7 +1895,7 @@ fn Url::parse_basic(
               }
             }
             if host is Domain("localhost") {
-              url.host = Some(Host::Opaque(""))
+              url.host = Some(Opaque(""))
             } else {
               url.host = Some(host)
             }
@@ -1935,7 +1935,7 @@ fn Url::parse_basic(
           url.query = base.query
           // fragment is NOT copied per spec
         } else {
-          url.host = Some(Host::Opaque(""))
+          url.host = Some(Opaque(""))
           // path defaults to Segments([]) which serializes as "/" for file URLs
         }
       FileSlash => {
@@ -1955,7 +1955,7 @@ fn Url::parse_basic(
             _ => ()
           }
         } else {
-          url.host = Some(Host::Opaque(""))
+          url.host = Some(Opaque(""))
         }
       }
       PathOrAuthority =>

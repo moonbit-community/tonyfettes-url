@@ -37,7 +37,7 @@ pub impl Show for Path with fn output(self : Path, logger : &Logger) -> Unit {
 /// 3. If url's scheme is "file", path's size is 1, and path[0] is a normalized
 ///    Windows drive letter, then return.
 /// 4. Remove path's last item, if any.
-fn Path::shorten(self : Path, scheme? : String = "") -> Unit {
+fn Path::shorten(self : Path, scheme~ : String) -> Unit {
   match self {
     // 1. Assert: url does not have an opaque path
     Opaque(_) => ()

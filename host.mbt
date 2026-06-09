@@ -209,7 +209,7 @@ pub fn Host::parse(
       // 2. If isOpaque is true, return the result of opaque-host parsing
       if is_opaque {
         let opaque_host = Host::parse_opaque(input)
-        return Host::Opaque(opaque_host)
+        return Opaque(opaque_host)
       }
       // 4. Let domain be the result of UTF-8 decode without BOM on percent-decoding of input
       let domain = @encoding/utf8.decode_lossy(percent_decode_string(input))
@@ -220,7 +220,7 @@ pub fn Host::parse(
         use_std3_ascii_rules=false,
         verify_dns_length=false,
       ) catch {
-        @idna.EmptyLabel => {
+        EmptyLabel => {
           // Allow empty labels per WHATWG only if domain consists of
           // valid ASCII domain characters (intentional empty labels like "." or "..")
           // Reject if empty label comes from IDNA mapping (e.g., soft hyphen -> "")
