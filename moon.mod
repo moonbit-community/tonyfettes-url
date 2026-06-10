@@ -1,6 +1,6 @@
 name = "tonyfettes/url"
 
-version = "0.3.1"
+version = "0.3.3"
 
 import {
   "tonyfettes/unicode@0.3.0",
