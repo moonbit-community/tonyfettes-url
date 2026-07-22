@@ -196,7 +196,7 @@ def generate_sort_tests(content):
         tests.append(f'''///|
 test "WPT URLSearchParams sort #{i}" {{
   let params = @url.UrlSearchParams::from_string("{input_escaped}")
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [{pairs_str}])
 }}''')
@@ -366,10 +366,10 @@ def generate_stringifier_tests(content):
                     if op[0] == 'append':
                         name_escaped = escape_moonbit_string(op[1])
                         value_escaped = escape_moonbit_string(op[2])
-                        op_lines.append(f'  params.append("{name_escaped}", "{value_escaped}")')
+                        op_lines.append(f'  let params = params.append("{name_escaped}", "{value_escaped}")')
                     elif op[0] == 'delete':
                         name_escaped = escape_moonbit_string(op[1])
-                        op_lines.append(f'  params.delete("{name_escaped}")')
+                        op_lines.append(f'  let params = params.delete("{name_escaped}")')
 
                 tests.append(f'''///|
 test "WPT URLSearchParams stringifier #{test_idx} - {escape_moonbit_string(desc[:40])}" {{
@@ -421,7 +421,7 @@ def generate_append_tests(content):
                 for op in operations:
                     name_escaped = escape_moonbit_string(op[1])
                     value_escaped = escape_moonbit_string(op[2])
-                    op_lines.append(f'  params.append("{name_escaped}", "{value_escaped}")')
+                    op_lines.append(f'  let params = params.append("{name_escaped}", "{value_escaped}")')
 
                 tests.append(f'''///|
 test "WPT URLSearchParams append #{test_idx} - {escape_moonbit_string(desc[:40])}" {{
@@ -505,9 +505,9 @@ def generate_delete_tests(content):
 
                     if delete_args[1] is not None:
                         value_escaped = escape_moonbit_string(delete_args[1])
-                        delete_line = f'  params.delete("{name_escaped}", value="{value_escaped}")'
+                        delete_line = f'  let params = params.delete("{name_escaped}", value="{value_escaped}")'
                     else:
-                        delete_line = f'  params.delete("{name_escaped}")'
+                        delete_line = f'  let params = params.delete("{name_escaped}")'
 
                     tests.append(f'''///|
 test "WPT URLSearchParams delete #{test_idx} - {escape_moonbit_string(desc[:40])}" {{
@@ -717,14 +717,14 @@ def generate_has_tests(content):
                     if op[0] == 'append':
                         op_name = escape_moonbit_string(op[1])
                         op_value = escape_moonbit_string(op[2])
-                        op_lines.append(f'  params.append("{op_name}", "{op_value}")')
+                        op_lines.append(f'  let params = params.append("{op_name}", "{op_value}")')
                     elif op[0] == 'delete':
                         op_name = escape_moonbit_string(op[1])
-                        op_lines.append(f'  params.delete("{op_name}")')
+                        op_lines.append(f'  let params = params.delete("{op_name}")')
                     elif op[0] == 'delete2':
                         op_name = escape_moonbit_string(op[1])
                         op_value = escape_moonbit_string(op[2])
-                        op_lines.append(f'  params.delete("{op_name}", value="{op_value}")')
+                        op_lines.append(f'  let params = params.delete("{op_name}", value="{op_value}")')
 
                 tests.append(f'''///|
 test "WPT URLSearchParams has #{test_idx} - {escape_moonbit_string(desc[:40])}" {{
@@ -779,7 +779,7 @@ def generate_set_tests(content):
                     tests.append(f'''///|
 test "WPT URLSearchParams set #{test_idx} - {escape_moonbit_string(desc[:40])}" {{
   let params = @url.UrlSearchParams::from_string("{input_escaped}")
-  params.set("{name_escaped}", "{value_escaped}")
+  let params = params.set("{name_escaped}", "{value_escaped}")
   assert_eq(params.to_string(), "{expected_escaped}")
 }}''')
                     test_idx += 1

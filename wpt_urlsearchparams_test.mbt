@@ -175,74 +175,74 @@ test "WPT URLSearchParams constructor #27 - Parse %f0%9f%92%a9" {
 ///|
 test "WPT URLSearchParams append #0 - Append same name" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b")
+  let params = params.append("a", "b")
   assert_eq(params.to_string(), "a=b")
 }
 
 ///|
 test "WPT URLSearchParams append #1 - Append same name" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b")
-  params.append("a", "b")
+  let params = params.append("a", "b")
+  let params = params.append("a", "b")
   assert_eq(params.to_string(), "a=b&a=b")
 }
 
 ///|
 test "WPT URLSearchParams append #2 - Append same name" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b")
-  params.append("a", "b")
-  params.append("a", "c")
+  let params = params.append("a", "b")
+  let params = params.append("a", "b")
+  let params = params.append("a", "c")
   assert_eq(params.to_string(), "a=b&a=b&a=c")
 }
 
 ///|
 test "WPT URLSearchParams append #3 - Append empty strings" {
   let params = @url.UrlSearchParams::new()
-  params.append("", "")
+  let params = params.append("", "")
   assert_eq(params.to_string(), "=")
 }
 
 ///|
 test "WPT URLSearchParams append #4 - Append empty strings" {
   let params = @url.UrlSearchParams::new()
-  params.append("", "")
-  params.append("", "")
+  let params = params.append("", "")
+  let params = params.append("", "")
   assert_eq(params.to_string(), "=&=")
 }
 
 ///|
 test "WPT URLSearchParams delete #0 - Delete basics" {
   let params = @url.UrlSearchParams::from_string("a=b&c=d")
-  params.delete("a")
+  let params = params.delete("a")
   assert_eq(params.to_string(), "c=d")
 }
 
 ///|
 test "WPT URLSearchParams delete #1 - Delete basics" {
   let params = @url.UrlSearchParams::from_string("a=a&b=b&a=a&c=c")
-  params.delete("a")
+  let params = params.delete("a")
   assert_eq(params.to_string(), "b=b&c=c")
 }
 
 ///|
 test "WPT URLSearchParams delete #2 - Delete basics" {
   let params = @url.UrlSearchParams::from_string("a=a&=&b=b&c=c")
-  params.delete("")
+  let params = params.delete("")
   assert_eq(params.to_string(), "a=a&b=b&c=c")
 }
 
 ///|
 test "WPT URLSearchParams delete #3 - Delete basics" {
   let params = @url.UrlSearchParams::from_string("a=a&null=null&b=b")
-  params.delete("null")
+  let params = params.delete("null")
   assert_eq(params.to_string(), "a=a&b=b")
 }
 
 ///|
 test "WPT URLSearchParams delete #4 - Delete basics" {
   let params = @url.UrlSearchParams::from_string("a=a&undefined=undefined&b=b")
-  params.delete("undefined")
+  let params = params.delete("undefined")
   assert_eq(params.to_string(), "a=a&b=b")
 }
 
@@ -399,22 +399,22 @@ test "WPT URLSearchParams has #9 - Two-argument has()" {
 ///|
 test "WPT URLSearchParams has #10 - Two-argument has()" {
   let params = @url.UrlSearchParams::from_string("a=b&a=d&c&e&")
-  params.append("first", "null")
+  let params = params.append("first", "null")
   assert_false(params.has("first", value=""))
 }
 
 ///|
 test "WPT URLSearchParams has #11 - Two-argument has()" {
   let params = @url.UrlSearchParams::from_string("a=b&a=d&c&e&")
-  params.append("first", "null")
+  let params = params.append("first", "null")
   assert_true(params.has("first", value="null"))
 }
 
 ///|
 test "WPT URLSearchParams has #12 - Two-argument has()" {
   let params = @url.UrlSearchParams::from_string("a=b&a=d&c&e&")
-  params.append("first", "null")
-  params.delete("a", value="b")
+  let params = params.append("first", "null")
+  let params = params.delete("a", value="b")
   assert_true(params.has("a", value="d"))
 }
 
@@ -445,14 +445,14 @@ test "WPT URLSearchParams has #16 - Two-argument has() respects undefined as" {
 ///|
 test "WPT URLSearchParams set #0 - Set basics" {
   let params = @url.UrlSearchParams::from_string("a=b&c=d")
-  params.set("a", "B")
+  let params = params.set("a", "B")
   assert_eq(params.to_string(), "a=B&c=d")
 }
 
 ///|
 test "WPT URLSearchParams set #1 - Set basics" {
   let params = @url.UrlSearchParams::from_string("a=b&c=d&a=e")
-  params.set("a", "B")
+  let params = params.set("a", "B")
   assert_eq(params.to_string(), "a=B&c=d")
 }
 
@@ -471,7 +471,7 @@ test "WPT URLSearchParams size #1 - URLSearchParams" {
 ///|
 test "WPT URLSearchParams sort #0" {
   let params = @url.UrlSearchParams::from_string("z=b&a=b&z=a&a=a")
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [("a", "b"), ("a", "a"), ("z", "b"), ("z", "a")])
 }
@@ -481,7 +481,7 @@ test "WPT URLSearchParams sort #1" {
   let params = @url.UrlSearchParams::from_string(
     "\u{FFFD}=x&\u{FFFC}&\u{FFFD}=a",
   )
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [("\u{FFFC}", ""), ("\u{FFFD}", "x"), ("\u{FFFD}", "a")])
 }
@@ -489,7 +489,7 @@ test "WPT URLSearchParams sort #1" {
 ///|
 test "WPT URLSearchParams sort #2" {
   let params = @url.UrlSearchParams::from_string("\u{FB03}&\u{1F308}")
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [("\u{1F308}", ""), ("\u{FB03}", "")])
 }
@@ -497,7 +497,7 @@ test "WPT URLSearchParams sort #2" {
 ///|
 test "WPT URLSearchParams sort #3" {
   let params = @url.UrlSearchParams::from_string("\u{00E9}&e\u{FFFD}&e\u{0301}")
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [("e\u{0301}", ""), ("e\u{FFFD}", ""), ("\u{00E9}", "")])
 }
@@ -507,7 +507,7 @@ test "WPT URLSearchParams sort #4" {
   let params = @url.UrlSearchParams::from_string(
     "z=z&a=a&z=y&a=b&z=x&a=c&z=w&a=d&z=v&a=e&z=u&a=f&z=t&a=g",
   )
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [
     ("a", "a"),
@@ -530,7 +530,7 @@ test "WPT URLSearchParams sort #4" {
 ///|
 test "WPT URLSearchParams sort #5" {
   let params = @url.UrlSearchParams::from_string("bbb&bb&aaa&aa=x&aa=y")
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [
     ("aa", "x"),
@@ -544,7 +544,7 @@ test "WPT URLSearchParams sort #5" {
 ///|
 test "WPT URLSearchParams sort #6" {
   let params = @url.UrlSearchParams::from_string("z=z&=f&=t&=x")
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [("", "f"), ("", "t"), ("", "x"), ("z", "z")])
 }
@@ -552,7 +552,7 @@ test "WPT URLSearchParams sort #6" {
 ///|
 test "WPT URLSearchParams sort #7" {
   let params = @url.UrlSearchParams::from_string("a\u{1F308}&a\u{1F4A9}")
-  params.sort()
+  let params = params.sort()
   let pairs = params.iter().collect()
   assert_eq(pairs, [("a\u{1F308}", ""), ("a\u{1F4A9}", "")])
 }
@@ -560,200 +560,200 @@ test "WPT URLSearchParams sort #7" {
 ///|
 test "WPT URLSearchParams stringifier #0 - Serialize space" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b c")
+  let params = params.append("a", "b c")
   assert_eq(params.to_string(), "a=b+c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #1 - Serialize space" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b c")
-  params.delete("a")
-  params.append("a b", "c")
+  let params = params.append("a", "b c")
+  let params = params.delete("a")
+  let params = params.append("a b", "c")
   assert_eq(params.to_string(), "a+b=c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #2 - Serialize empty value" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "")
+  let params = params.append("a", "")
   assert_eq(params.to_string(), "a=")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #3 - Serialize empty value" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "")
-  params.append("a", "")
+  let params = params.append("a", "")
+  let params = params.append("a", "")
   assert_eq(params.to_string(), "a=&a=")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #4 - Serialize empty value" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "")
-  params.append("a", "")
-  params.append("", "b")
+  let params = params.append("a", "")
+  let params = params.append("a", "")
+  let params = params.append("", "b")
   assert_eq(params.to_string(), "a=&a=&=b")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #5 - Serialize empty value" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "")
-  params.append("a", "")
-  params.append("", "b")
-  params.append("", "")
+  let params = params.append("a", "")
+  let params = params.append("a", "")
+  let params = params.append("", "b")
+  let params = params.append("", "")
   assert_eq(params.to_string(), "a=&a=&=b&=")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #6 - Serialize empty value" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "")
-  params.append("a", "")
-  params.append("", "b")
-  params.append("", "")
-  params.append("", "")
+  let params = params.append("a", "")
+  let params = params.append("a", "")
+  let params = params.append("", "b")
+  let params = params.append("", "")
+  let params = params.append("", "")
   assert_eq(params.to_string(), "a=&a=&=b&=&=")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #7 - Serialize empty name" {
   let params = @url.UrlSearchParams::new()
-  params.append("", "b")
+  let params = params.append("", "b")
   assert_eq(params.to_string(), "=b")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #8 - Serialize empty name" {
   let params = @url.UrlSearchParams::new()
-  params.append("", "b")
-  params.append("", "b")
+  let params = params.append("", "b")
+  let params = params.append("", "b")
   assert_eq(params.to_string(), "=b&=b")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #9 - Serialize empty name and value" {
   let params = @url.UrlSearchParams::new()
-  params.append("", "")
+  let params = params.append("", "")
   assert_eq(params.to_string(), "=")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #10 - Serialize empty name and value" {
   let params = @url.UrlSearchParams::new()
-  params.append("", "")
-  params.append("", "")
+  let params = params.append("", "")
+  let params = params.append("", "")
   assert_eq(params.to_string(), "=&=")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #11 - Serialize +" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b+c")
+  let params = params.append("a", "b+c")
   assert_eq(params.to_string(), "a=b%2Bc")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #12 - Serialize +" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b+c")
-  params.delete("a")
-  params.append("a+b", "c")
+  let params = params.append("a", "b+c")
+  let params = params.delete("a")
+  let params = params.append("a+b", "c")
   assert_eq(params.to_string(), "a%2Bb=c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #13 - Serialize =" {
   let params = @url.UrlSearchParams::new()
-  params.append("=", "a")
+  let params = params.append("=", "a")
   assert_eq(params.to_string(), "%3D=a")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #14 - Serialize =" {
   let params = @url.UrlSearchParams::new()
-  params.append("=", "a")
-  params.append("b", "=")
+  let params = params.append("=", "a")
+  let params = params.append("b", "=")
   assert_eq(params.to_string(), "%3D=a&b=%3D")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #15 - Serialize &" {
   let params = @url.UrlSearchParams::new()
-  params.append("&", "a")
+  let params = params.append("&", "a")
   assert_eq(params.to_string(), "%26=a")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #16 - Serialize &" {
   let params = @url.UrlSearchParams::new()
-  params.append("&", "a")
-  params.append("b", "&")
+  let params = params.append("&", "a")
+  let params = params.append("b", "&")
   assert_eq(params.to_string(), "%26=a&b=%26")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #17 - Serialize *-._" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "*-._")
+  let params = params.append("a", "*-._")
   assert_eq(params.to_string(), "a=*-._")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #18 - Serialize *-._" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "*-._")
-  params.delete("a")
-  params.append("*-._", "c")
+  let params = params.append("a", "*-._")
+  let params = params.delete("a")
+  let params = params.append("*-._", "c")
   assert_eq(params.to_string(), "*-._=c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #19 - Serialize %" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b%c")
+  let params = params.append("a", "b%c")
   assert_eq(params.to_string(), "a=b%25c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #20 - Serialize %" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b%c")
-  params.delete("a")
-  params.append("a%b", "c")
+  let params = params.append("a", "b%c")
+  let params = params.delete("a")
+  let params = params.append("a%b", "c")
   assert_eq(params.to_string(), "a%25b=c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #21 - Serialize \\\\0" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b\u{0000}c")
+  let params = params.append("a", "b\u{0000}c")
   assert_eq(params.to_string(), "a=b%00c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #22 - Serialize \\\\0" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b\u{0000}c")
-  params.delete("a")
-  params.append("a\u{0000}b", "c")
+  let params = params.append("a", "b\u{0000}c")
+  let params = params.delete("a")
+  let params = params.append("a\u{0000}b", "c")
   assert_eq(params.to_string(), "a%00b=c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #23 - Serialize \\uD83D\\uDCA9" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b\u{1F4A9}c")
+  let params = params.append("a", "b\u{1F4A9}c")
   assert_eq(params.to_string(), "a=b%F0%9F%92%A9c")
 }
 
 ///|
 test "WPT URLSearchParams stringifier #24 - Serialize \\uD83D\\uDCA9" {
   let params = @url.UrlSearchParams::new()
-  params.append("a", "b\u{1F4A9}c")
-  params.delete("a")
-  params.append("a\u{1F4A9}b", "c")
+  let params = params.append("a", "b\u{1F4A9}c")
+  let params = params.delete("a")
+  let params = params.append("a\u{1F4A9}b", "c")
   assert_eq(params.to_string(), "a%F0%9F%92%A9b=c")
 }
