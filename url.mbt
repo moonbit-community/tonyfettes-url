@@ -13,7 +13,7 @@ pub struct Url {
   mut path : Path
   mut query : String?
   mut fragment : String?
-}
+} derive(Eq)
 
 ///|
 /// Create a new empty URL
@@ -27,6 +27,22 @@ fn Url::new() -> Url {
     path: Segments([]),
     query: None,
     fragment: None,
+  }
+}
+
+///|
+/// Create a deep copy of the URL. The `with_*` methods mutate a fresh copy so
+/// the receiver is never observably modified.
+fn Url::clone(self : Url) -> Url {
+  {
+    scheme: self.scheme,
+    username: self.username,
+    password: self.password,
+    host: self.host,
+    port: self.port,
+    path: self.path.clone(),
+    query: self.query,
+    fragment: self.fragment,
   }
 }
 
@@ -244,9 +260,8 @@ pub fn Url::search(self : Url) -> String {
 
 ///|
 /// Get the URL search params.
-/// Returns a new UrlSearchParams instance parsed from the current query string.
-/// Note: Changes to the returned UrlSearchParams will NOT automatically update the URL.
-/// Use set_search_params() to update the URL with modified search params.
+/// Returns a UrlSearchParams instance parsed from the current query string.
+/// Use with_search_params() to obtain a URL with a different set of search params.
 /// See: https://url.spec.whatwg.org/#dom-url-searchparams
 pub fn Url::search_params(self : Url) -> UrlSearchParams {
   match self.query {
@@ -256,15 +271,13 @@ pub fn Url::search_params(self : Url) -> UrlSearchParams {
 }
 
 ///|
-/// Set the URL query from UrlSearchParams.
-/// This serializes the search params and updates the URL's query.
-pub fn Url::set_search_params(self : Url, params : UrlSearchParams) -> Unit {
+/// Return a copy of the URL whose query is the serialization of the given
+/// search params (no query if the serialization is empty).
+pub fn Url::with_search_params(self : Url, params : UrlSearchParams) -> Url {
+  let url = self.clone()
   let serialized = params.to_string()
-  if serialized.is_empty() {
-    self.query = None
-  } else {
-    self.query = Some(serialized)
-  }
+  url.query = if serialized.is_empty() { None } else { Some(serialized) }
+  url
 }
 
 ///|
@@ -309,7 +322,8 @@ fn default_port(scheme : StringView) -> UInt16? {
 }
 
 ///|
-/// Run the basic URL parser with a state override on this URL.
+/// Run the basic URL parser with a state override on this URL, for states
+/// that cannot fail (path start, query, fragment).
 fn Url::parse_with_state(
   self : Url,
   input : StringView,
@@ -319,181 +333,181 @@ fn Url::parse_with_state(
 }
 
 ///|
-/// Set the full URL (re-parse and replace all components).
-/// See: https://url.spec.whatwg.org/#dom-url-href
-/// The href setter steps are:
-/// 1. Let parsedURL be the result of running the basic URL parser on the given value.
-/// 2. If parsedURL is failure, then throw a TypeError.
-/// 3. Set this's URL to parsedURL.
-pub fn Url::set_href(self : Url, href : String) -> Unit raise ValidationErrors {
-  let parsed = parse(href)
-  self.scheme = parsed.scheme
-  self.username = parsed.username
-  self.password = parsed.password
-  self.host = parsed.host
-  self.port = parsed.port
-  self.path = parsed.path
-  self.query = parsed.query
-  self.fragment = parsed.fragment
+/// Run the basic URL parser with a state override on this URL, raising the
+/// reported validation error (or `default_error`) on failure.
+fn Url::run_override(
+  self : Url,
+  input : StringView,
+  state_override : State,
+  default_error : ValidationError,
+) -> Unit raise ValidationError {
+  let validation_errors : Array[ValidationError] = []
+  match Url::parse_basic(self, input, state_override~, validation_errors~) {
+    Some(_) => ()
+    None => raise validation_errors.last().unwrap_or(default_error)
+  }
 }
 
 ///|
-/// Set the protocol (scheme).
+/// Whether the URL cannot have a username/password/port.
+/// See: https://url.spec.whatwg.org/#cannot-have-a-username-password-port
+fn Url::cannot_have_credentials_or_port(self : Url) -> Bool {
+  has_empty_host(self.host) || self.scheme == "file"
+}
+
+///|
+/// Return a copy of the URL with the given protocol (scheme).
 /// See: https://url.spec.whatwg.org/#dom-url-protocol
 /// The protocol setter steps are to basic URL parse the given value, followed
-/// by U+003A (:), with this's URL as url and scheme start state as state override.
-pub fn Url::set_protocol(self : Url, protocol : String) -> Unit {
+/// by U+003A (:), with this's URL as url and scheme start state as state
+/// override. Raises if the value is not a valid scheme or the scheme change
+/// is not allowed (e.g. between special and non-special schemes).
+pub fn Url::with_protocol(
+  self : Url,
+  protocol : String,
+) -> Url raise ValidationError {
+  let url = self.clone()
   let input = "\{protocol}:"
-  self.parse_with_state(input[:], SchemeStart)
+  url.run_override(input[:], SchemeStart, InvalidScheme)
+  url
 }
 
 ///|
-/// Set the username.
+/// Return a copy of the URL with the given username.
 /// See: https://url.spec.whatwg.org/#dom-url-username
-/// The username setter steps are:
-/// 1. If this's URL cannot have a username/password/port, then return.
-/// 2. Set the username given this's URL and the given value.
-pub fn Url::set_username(self : Url, username : String) -> Unit {
-  // 1. If this's URL cannot have a username/password/port, then return.
-  if self.host is None || self.host is Some(Opaque("")) {
-    return
+/// Raises if the URL cannot have a username/password/port.
+pub fn Url::with_username(
+  self : Url,
+  username : String,
+) -> Url raise ValidationError {
+  if self.cannot_have_credentials_or_port() {
+    raise CannotHaveUsernamePasswordPort
   }
-  if self.scheme == "file" {
-    return
-  }
-  // 2. Set the username given this's URL and the given value.
   // See: https://url.spec.whatwg.org/#set-the-username
   // Set url's username to the result of running UTF-8 percent-encode on the
   // given value using the userinfo percent-encode set.
-  self.username = utf8_percent_encode(username, userinfo_percent_encode_set)
+  let url = self.clone()
+  url.username = utf8_percent_encode(username, userinfo_percent_encode_set)
+  url
 }
 
 ///|
-/// Set the password.
+/// Return a copy of the URL with the given password.
 /// See: https://url.spec.whatwg.org/#dom-url-password
-/// The password setter steps are:
-/// 1. If this's URL cannot have a username/password/port, then return.
-/// 2. Set the password given this's URL and the given value.
-pub fn Url::set_password(self : Url, password : String) -> Unit {
-  // 1. If this's URL cannot have a username/password/port, then return.
-  if self.host is None || self.host is Some(Opaque("")) {
-    return
+/// Raises if the URL cannot have a username/password/port.
+pub fn Url::with_password(
+  self : Url,
+  password : String,
+) -> Url raise ValidationError {
+  if self.cannot_have_credentials_or_port() {
+    raise CannotHaveUsernamePasswordPort
   }
-  if self.scheme == "file" {
-    return
-  }
-  // 2. Set the password given this's URL and the given value.
   // See: https://url.spec.whatwg.org/#set-the-password
   // Set url's password to the result of running UTF-8 percent-encode on the
   // given value using the userinfo percent-encode set.
-  self.password = utf8_percent_encode(password, userinfo_percent_encode_set)
+  let url = self.clone()
+  url.password = utf8_percent_encode(password, userinfo_percent_encode_set)
+  url
 }
 
 ///|
-/// Set the host (hostname and optional port).
+/// Return a copy of the URL with the given host (hostname and optional port).
 /// See: https://url.spec.whatwg.org/#dom-url-host
-/// The host setter steps are:
-/// 1. If this's URL has an opaque path, then return.
-/// 2. Basic URL parse the given value with this's URL as url and host state
-///    as state override.
-pub fn Url::set_host(self : Url, host_str : String) -> Unit {
-  // 1. If this's URL has an opaque path, then return.
+/// Raises if the URL has an opaque path or the host fails to parse.
+pub fn Url::with_host(
+  self : Url,
+  host_str : String,
+) -> Url raise ValidationError {
   if self.path is Opaque(_) {
-    return
+    raise UrlHasOpaquePath
   }
-  // 2. Basic URL parse the given value with this's URL as url and host state
-  //    as state override.
-  self.parse_with_state(host_str[:], Host)
+  let url = self.clone()
+  url.run_override(host_str[:], Host, HostMissing)
+  url
 }
 
 ///|
-/// Set the hostname (without port).
+/// Return a copy of the URL with the given hostname (without port).
 /// See: https://url.spec.whatwg.org/#dom-url-hostname
-/// The hostname setter steps are:
-/// 1. If this's URL has an opaque path, then return.
-/// 2. Basic URL parse the given value with this's URL as url and hostname state
-///    as state override.
-pub fn Url::set_hostname(self : Url, hostname : String) -> Unit {
-  // 1. If this's URL has an opaque path, then return.
+/// Raises if the URL has an opaque path or the hostname fails to parse.
+pub fn Url::with_hostname(
+  self : Url,
+  hostname : String,
+) -> Url raise ValidationError {
   if self.path is Opaque(_) {
-    return
+    raise UrlHasOpaquePath
   }
-  // 2. Basic URL parse the given value with this's URL as url and hostname state
-  //    as state override.
-  self.parse_with_state(hostname[:], Hostname)
+  let url = self.clone()
+  url.run_override(hostname[:], Hostname, HostMissing)
+  url
 }
 
 ///|
-/// Set the port.
+/// Return a copy of the URL with the given port ("" removes the port).
 /// See: https://url.spec.whatwg.org/#dom-url-port
-/// The port setter steps are:
-/// 1. If this's URL cannot have a username/password/port, then return.
-/// 2. If the given value is the empty string, then set this's URL's port to null.
-/// 3. Otherwise, basic URL parse the given value with this's URL as url and
-///    port state as state override.
-pub fn Url::set_port(self : Url, port_str : String) -> Unit {
-  // 1. If this's URL cannot have a username/password/port, then return.
-  if has_empty_host(self.host) || self.path is Opaque(_) {
-    return
+/// Raises if the URL cannot have a username/password/port or the port is
+/// not a valid 16-bit integer.
+pub fn Url::with_port(
+  self : Url,
+  port_str : String,
+) -> Url raise ValidationError {
+  // 1. If this's URL cannot have a username/password/port, then raise.
+  if self.cannot_have_credentials_or_port() {
+    raise CannotHaveUsernamePasswordPort
   }
-  if self.scheme == "file" {
-    return
-  }
-  // 2. If the given value is the empty string, then set this's URL's port to null.
+  let url = self.clone()
   if port_str.is_empty() {
-    self.port = None
-    return
+    // 2. If the given value is the empty string, then set the port to null.
+    url.port = None
+  } else {
+    // 3. Otherwise, basic URL parse the given value with port state as
+    //    state override.
+    url.run_override(port_str[:], Port, PortInvalid)
   }
-  // 3. Otherwise, basic URL parse the given value with this's URL as url and
-  //    port state as state override.
-  self.parse_with_state(port_str[:], Port)
+  url
 }
 
 ///|
-/// Set the pathname.
+/// Return a copy of the URL with the given pathname.
 /// See: https://url.spec.whatwg.org/#dom-url-pathname
-/// The pathname setter steps are:
-/// 1. If this's URL has an opaque path, then return.
-/// 2. Empty this's URL's path.
-/// 3. Basic URL parse the given value with this's URL as url and path start
-///    state as state override.
-pub fn Url::set_pathname(self : Url, pathname : String) -> Unit {
-  // 1. If this's URL has an opaque path, then return.
+/// Raises if the URL has an opaque path.
+pub fn Url::with_pathname(
+  self : Url,
+  pathname : String,
+) -> Url raise ValidationError {
+  // 1. If this's URL has an opaque path, then raise.
   if self.path is Opaque(_) {
-    return
+    raise UrlHasOpaquePath
   }
+  let url = self.clone()
   let cleaned = remove_ascii_tab_or_newline(pathname[:])
   if cleaned.is_empty() {
-    if self.is_special() || self.host is None {
-      self.path = Segments([""])
+    url.path = if url.is_special() || url.host is None {
+      Segments([""])
     } else {
-      self.path = Segments([])
+      Segments([])
     }
-    return
+  } else {
+    // 2. Empty this's URL's path.
+    url.path = Segments([])
+    // 3. Basic URL parse the given value with path start state as state
+    //    override (cannot fail).
+    url.parse_with_state(cleaned[:], PathStart)
   }
-  // 2. Empty this's URL's path.
-  self.path = Segments([])
-  // 3. Basic URL parse the given value with this's URL as url and path start
-  //    state as state override.
-  self.parse_with_state(cleaned[:], PathStart)
+  url
 }
 
 ///|
-/// Set the search (query string).
+/// Return a copy of the URL with the given search (query string, "" removes
+/// the query).
 /// See: https://url.spec.whatwg.org/#dom-url-search
-/// The search setter steps are:
-/// 1. If the given value is the empty string, set this's URL's query to null.
-/// 2. Otherwise:
-///    2.1. Let input be the given value with a single leading U+003F (?) removed, if any.
-///    2.2. Set this's URL's query to the empty string.
-///    2.3. Basic URL parse input with this's URL as url and query state as
-///         state override.
-pub fn Url::set_search(self : Url, search : String) -> Unit {
+pub fn Url::with_search(self : Url, search : String) -> Url {
+  let url = self.clone()
   let cleaned = remove_ascii_tab_or_newline(search[:])
   // 1. If the given value is the empty string, set this's URL's query to null.
   if cleaned.is_empty() {
-    self.query = None
-    return
+    url.query = None
+    return url
   }
   // 2.1. Let input be the given value with a single leading U+003F (?) removed, if any.
   let query = match cleaned[:] {
@@ -501,27 +515,23 @@ pub fn Url::set_search(self : Url, search : String) -> Unit {
     _ => cleaned[:]
   }
   // 2.2. Set this's URL's query to the empty string.
-  self.query = Some("")
-  // 2.3. Basic URL parse input with this's URL as url and query state as state override.
-  self.parse_with_state(query, Query)
+  url.query = Some("")
+  // 2.3. Basic URL parse input with query state as state override (cannot fail).
+  url.parse_with_state(query, Query)
+  url
 }
 
 ///|
-/// Set the hash (fragment).
+/// Return a copy of the URL with the given hash (fragment, "" removes the
+/// fragment).
 /// See: https://url.spec.whatwg.org/#dom-url-hash
-/// The hash setter steps are:
-/// 1. If the given value is the empty string, then set this's URL's fragment to null.
-/// 2. Otherwise:
-///    2.1. Let input be the given value with a single leading U+0023 (#) removed, if any.
-///    2.2. Set this's URL's fragment to the empty string.
-///    2.3. Basic URL parse input with this's URL as url and fragment state as
-///         state override.
-pub fn Url::set_hash(self : Url, hash : String) -> Unit {
+pub fn Url::with_hash(self : Url, hash : String) -> Url {
+  let url = self.clone()
   let cleaned = remove_ascii_tab_or_newline(hash[:])
   // 1. If the given value is the empty string, then set this's URL's fragment to null.
   if cleaned.is_empty() {
-    self.fragment = None
-    return
+    url.fragment = None
+    return url
   }
   // 2.1. Let input be the given value with a single leading U+0023 (#) removed, if any.
   let fragment = match cleaned[:] {
@@ -529,10 +539,10 @@ pub fn Url::set_hash(self : Url, hash : String) -> Unit {
     _ => cleaned[:]
   }
   // 2.2. Set this's URL's fragment to the empty string.
-  self.fragment = Some("")
-  // 2.3. Basic URL parse input with this's URL as url and fragment state as
-  //      state override.
-  self.parse_with_state(fragment, Fragment)
+  url.fragment = Some("")
+  // 2.3. Basic URL parse input with fragment state as state override (cannot fail).
+  url.parse_with_state(fragment, Fragment)
+  url
 }
 
 ///|
@@ -835,6 +845,7 @@ fn Url::parse_basic(
             state = NoScheme
             continue view // Re-process same character in NoScheme
           } else {
+            validation_errors.push(InvalidScheme)
             return None
           }
         // Scheme state (https://url.spec.whatwg.org/#scheme-state)
@@ -853,11 +864,9 @@ fn Url::parse_basic(
               if has_state_override {
                 let url_special = url.is_special()
                 let next_special = is_special_scheme(next_scheme)
-                if url_special && !next_special {
-                  return Some(url)
-                }
-                if !url_special && next_special {
-                  return Some(url)
+                if url_special != next_special {
+                  validation_errors.push(SchemeChangeNotAllowed)
+                  return None
                 }
                 if (
                     !url.username.is_empty() ||
@@ -865,10 +874,12 @@ fn Url::parse_basic(
                     url.port is Some(_)
                   ) &&
                   next_scheme == "file" {
-                  return Some(url)
+                  validation_errors.push(SchemeChangeNotAllowed)
+                  return None
                 }
                 if url.scheme == "file" && has_empty_host(url.host) {
-                  return Some(url)
+                  validation_errors.push(SchemeChangeNotAllowed)
+                  return None
                 }
               }
               url.scheme = next_scheme
@@ -908,6 +919,7 @@ fn Url::parse_basic(
             }
             _ =>
               if has_state_override {
+                validation_errors.push(InvalidScheme)
                 return None
               } else {
                 buffer.reset()
@@ -1137,6 +1149,8 @@ fn Url::parse_basic(
               return None
             }
             if state_override is Some(Hostname) {
+              // Port not allowed when only the hostname is being set
+              validation_errors.push(HostInvalidCodePoint)
               return None
             }
             let host = Host::parse(
@@ -1164,6 +1178,8 @@ fn Url::parse_basic(
                 !url.password.is_empty() ||
                 url.port is Some(_)
               ) {
+              // Cannot remove the host while credentials or port are present
+              validation_errors.push(HostMissing)
               return None
             }
             if buffer.is_empty() {
@@ -1208,6 +1224,13 @@ fn Url::parse_basic(
                 port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
                 // Check overflow during accumulation to prevent UInt64 wraparound
                 if port_value > 65535 {
+                  // The host setter discards the parser result once the host
+                  // is committed, so a bad trailing port is ignored there;
+                  // only the port setter itself treats it as a failure.
+                  if has_state_override && !(state_override is Some(Port)) {
+                    return Some(url)
+                  }
+                  validation_errors.push(PortOutOfRange)
                   return None
                 }
               }
@@ -1225,12 +1248,19 @@ fn Url::parse_basic(
                 return Some(url)
               }
             } else if has_state_override {
+              // Empty port after the host was committed: per spec the host
+              // setter just returns here, keeping the committed host.
+              if !(state_override is Some(Port)) {
+                return Some(url)
+              }
+              validation_errors.push(PortInvalid)
               return None
             }
             state = PathStart
             pointer.decrease()
           } else {
             // Invalid port character
+            validation_errors.push(PortInvalid)
             return None
           }
         // Path start state (https://url.spec.whatwg.org/#path-start-state)
@@ -1622,6 +1652,7 @@ fn Url::parse_basic(
     match state {
       SchemeStart | NoScheme => {
         if has_state_override {
+          validation_errors.push(InvalidScheme)
           return None
         }
         validation_errors.push(MissingSchemeNonRelativeUrl)
@@ -1630,6 +1661,7 @@ fn Url::parse_basic(
       Scheme =>
         // EOF in Scheme state without finding ':' - try as NoScheme if base exists
         if has_state_override {
+          validation_errors.push(InvalidScheme)
           return None
         } else if base is Some(_) {
           // Reset and re-parse in NoScheme state
@@ -1714,10 +1746,13 @@ fn Url::parse_basic(
                 let mut port_value : UInt64 = 0
                 for ch in port_part {
                   if !ch.is_ascii_digit() {
-                    return None // Invalid port character
+                    // Invalid port character
+                    validation_errors.push(PortInvalid)
+                    return None
                   }
                   port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
                   if port_value > 65535 {
+                    validation_errors.push(PortOutOfRange)
                     return None
                   }
                 }
@@ -1764,6 +1799,8 @@ fn Url::parse_basic(
             !url.password.is_empty() ||
             url.port is Some(_)
           ) {
+          // Cannot remove the host while credentials or port are present
+          validation_errors.push(HostMissing)
           return None
         }
         if !buffer.is_empty() {
@@ -1789,6 +1826,12 @@ fn Url::parse_basic(
             port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
             // Check overflow during accumulation to prevent UInt64 wraparound
             if port_value > 65535 {
+              // See the in-loop port state: the host setter ignores a bad
+              // trailing port once the host is committed.
+              if has_state_override && !(state_override is Some(Port)) {
+                return Some(url)
+              }
+              validation_errors.push(PortOutOfRange)
               return None
             }
           }
@@ -1801,6 +1844,12 @@ fn Url::parse_basic(
           }
           url.port = if is_default { None } else { Some(port_u16) }
         } else if has_state_override {
+          // Empty port after the host was committed: per spec the host
+          // setter just returns here, keeping the committed host.
+          if !(state_override is Some(Port)) {
+            return Some(url)
+          }
+          validation_errors.push(PortInvalid)
           return None
         }
       PathStart =>

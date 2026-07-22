@@ -57,22 +57,64 @@ test "Url getters" {
 }
 
 ///|
-test "Url setters" {
+test "Url with_* builders" {
   let url = @url.Url::parse("http://example.com/path")
-  url.set_protocol("https:")
+    .with_protocol("https:")
+    .with_username("newuser")
+    .with_password("newpass")
+    .with_port("9000")
+    .with_pathname("/new/path")
+    .with_search("?newquery=1")
+    .with_hash("#newhash")
   inspect(url.protocol(), content="https:")
-  url.set_username("newuser")
   inspect(url.username(), content="newuser")
-  url.set_password("newpass")
   inspect(url.password(), content="newpass")
-  url.set_port("9000")
   inspect(url.port(), content="9000")
-  url.set_pathname("/new/path")
   inspect(url.pathname(), content="/new/path")
-  url.set_search("?newquery=1")
   inspect(url.search(), content="?newquery=1")
-  url.set_hash("#newhash")
   inspect(url.hash(), content="#newhash")
+  inspect(
+    url.href(),
+    content="https://newuser:newpass@example.com:9000/new/path?newquery=1#newhash",
+  )
+}
+
+///|
+test "Url with_* leaves the receiver unchanged" {
+  let url = @url.Url::parse("http://example.com/path")
+  let updated = url.with_pathname("/other")
+  inspect(url.href(), content="http://example.com/path")
+  inspect(updated.href(), content="http://example.com/other")
+}
+
+///|
+test "Url with_* raises when the component cannot be set" {
+  let url = @url.Url::parse("mailto:someone@example.com")
+  // Opaque path: host cannot be set
+  try url.with_host("example.org") catch {
+    err => inspect(err, content="UrlHasOpaquePath")
+  } noraise {
+    _ => fail("expected with_host to fail")
+  }
+  // No host: username/password/port cannot be set
+  try url.with_username("user") catch {
+    err => inspect(err, content="CannotHaveUsernamePasswordPort")
+  } noraise {
+    _ => fail("expected with_username to fail")
+  }
+  // Special <-> non-special scheme changes are not allowed
+  let http = @url.Url::parse("http://example.com/")
+  try http.with_protocol("mailto") catch {
+    err => inspect(err, content="SchemeChangeNotAllowed")
+  } noraise {
+    _ => fail("expected with_protocol to fail")
+  }
+  // Out-of-range port
+  try http.with_port("99999") catch {
+    err => inspect(err, content="PortOutOfRange")
+  } noraise {
+    _ => fail("expected with_port to fail")
+  }
 }
 
 ///|
