@@ -10,7 +10,7 @@ pub struct UrlSearchParams {
 ///|
 /// Create a new empty UrlSearchParams instance.
 pub fn UrlSearchParams::new() -> UrlSearchParams {
-  { list: [] }
+  { list: [], }
 }
 
 ///|
@@ -33,7 +33,7 @@ pub fn UrlSearchParams::from_string(input : String) -> UrlSearchParams {
 pub fn UrlSearchParams::from_pairs(
   pairs : Array[(String, String)],
 ) -> UrlSearchParams {
-  { list: pairs.copy() }
+  { list: pairs.copy(), }
 }
 
 ///|
@@ -85,8 +85,8 @@ fn urlencoded_parse(
 ///|
 /// Find first '=' in StringView and split into (name, value).
 fn find_first_equals(input : StringView) -> (String, String) {
-  let name_builder = StringBuilder::new()
-  let value_builder = StringBuilder::new()
+  let name_builder = StringBuilder()
+  let value_builder = StringBuilder()
   let mut found_equals = false
   for c in input {
     if !found_equals && c == '=' {
@@ -103,7 +103,7 @@ fn find_first_equals(input : StringView) -> (String, String) {
 ///|
 /// Replace all `+` characters with spaces.
 fn replace_plus_with_space(input : String) -> String {
-  let output = StringBuilder::new()
+  let output = StringBuilder()
   for c in input {
     if c == '+' {
       output.write_char(' ')
@@ -118,7 +118,7 @@ fn replace_plus_with_space(input : String) -> String {
 /// Serialize UrlSearchParams to application/x-www-form-urlencoded string.
 /// See: https://url.spec.whatwg.org/#concept-urlencoded-serializer
 pub fn UrlSearchParams::to_string(self : UrlSearchParams) -> String {
-  let output = StringBuilder::new()
+  let output = StringBuilder()
   for i, pair in self.list {
     if i > 0 {
       output.write_char('&')

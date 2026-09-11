@@ -56,7 +56,7 @@ pub impl Show for ValidationErrors with fn output(self, logger) {
         if index > 0 {
           logger.write_string(", ")
         }
-        error.output(logger)
+        Show::output(error, logger)
       }
       logger.write_string("])")
     }
@@ -80,7 +80,7 @@ pub fn Url::parse(
 /// Serialize URL to string per WHATWG URL spec.
 /// See: https://url.spec.whatwg.org/#url-serializing
 pub fn Url::to_string(self : Url) -> String {
-  let result = StringBuilder::new()
+  let result = StringBuilder()
   // 1. Let output be url's scheme and U+003A (:) concatenated.
   result.write_string(self.scheme)
   result.write_char(':')
@@ -552,7 +552,7 @@ pub impl ToJson for Url with fn to_json(self : Url) -> Json {
 ///|
 /// Remove all ASCII tab (0x09), LF (0x0A), and CR (0x0D) from the entire input
 fn remove_ascii_tab_or_newline(input : StringView) -> String {
-  let output = StringBuilder::new()
+  let output = StringBuilder()
   for c in input {
     if !(c is ('\t' | '\n' | '\r')) {
       output.write_char(c)
@@ -581,7 +581,7 @@ fn encode_last_trailing_space(s : String) -> String {
   match s.get_char(len - 1) {
     Some(' ') => {
       // Replace only the last space with %20
-      let result = StringBuilder::new()
+      let result = StringBuilder()
       for i, c in s {
         if i == len - 1 {
           result.write_string("%20")
@@ -698,7 +698,7 @@ priv struct StringPointer {
 
 ///|
 fn StringPointer::new(input : StringView) -> StringPointer {
-  { input, pointer: input.start_offset() }
+  { input, pointer: input.start_offset(), }
 }
 
 ///|
@@ -780,7 +780,7 @@ fn Url::parse_basic(
     state = FileHost
   }
   // 3. Let buffer be the empty string.
-  let buffer : StringBuilder = StringBuilder::new()
+  let buffer : StringBuilder = StringBuilder()
   // 4. Let atSignSeen, insideBrackets, and passwordTokenSeen be false.
   let mut at_sign_seen : Bool = false
   let mut inside_brackets : Bool = false
@@ -1685,8 +1685,8 @@ fn Url::parse_basic(
             let last_colon = port_separator
             if last_colon > 0 {
               // Extract host and port using character iteration
-              let host_builder = StringBuilder::new()
-              let port_builder = StringBuilder::new()
+              let host_builder = StringBuilder()
+              let port_builder = StringBuilder()
               let mut past_colon = false
               let mut char_idx = 0
               for c in buffer_str {
