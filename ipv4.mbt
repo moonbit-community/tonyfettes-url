@@ -1,7 +1,7 @@
 ///|
 /// Represents an IPv4 address as a 32-bit unsigned integer.
 /// See: https://url.spec.whatwg.org/#concept-ipv4
-struct IPv4(UInt) derive(Debug)
+struct IPv4(UInt) derive(Debug, Eq)
 
 ///|
 /// Serialize IPv4 address to dotted-decimal notation (e.g., "192.168.1.1").

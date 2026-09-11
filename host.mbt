@@ -7,7 +7,7 @@ pub enum Host {
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-} derive(ToJson, Debug)
+} derive(ToJson, Debug, Eq)
 
 ///|
 /// Serialize host per WHATWG URL spec
@@ -65,6 +65,12 @@ suberror ValidationError {
   InvalidReverseSolidus
   InvalidCredentials
   HostMissing
+  InvalidScheme
+  SchemeChangeNotAllowed
+  CannotHaveUsernamePasswordPort
+  UrlHasOpaquePath
+  PortInvalid
+  PortOutOfRange
 } derive(ToJson, Debug)
 
 ///|
@@ -92,6 +98,12 @@ pub impl Show for ValidationError with fn output(self, logger) {
     InvalidReverseSolidus => "InvalidReverseSolidus"
     InvalidCredentials => "InvalidCredentials"
     HostMissing => "HostMissing"
+    InvalidScheme => "InvalidScheme"
+    SchemeChangeNotAllowed => "SchemeChangeNotAllowed"
+    CannotHaveUsernamePasswordPort => "CannotHaveUsernamePasswordPort"
+    UrlHasOpaquePath => "UrlHasOpaquePath"
+    PortInvalid => "PortInvalid"
+    PortOutOfRange => "PortOutOfRange"
   }
   logger.write_string(message)
 }

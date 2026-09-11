@@ -45,10 +45,17 @@ FIELD_ORDER = [
 ]
 
 
-def setter_method(name):
-    if name == "href":
-        return "set_href"
-    return f"set_{name}"
+# with_search / with_hash cannot fail; every other with_* raises. WPT expects
+# a failed setter to leave the URL unchanged, which `catch { _ => url }` models.
+RAISING_SETTERS = {
+    "protocol",
+    "username",
+    "password",
+    "host",
+    "hostname",
+    "port",
+    "pathname",
+}
 
 
 def getter_method(name):
@@ -65,8 +72,18 @@ def generate_single_test(setter, index, item):
     lines = []
     lines.append("///|")
     lines.append(f'test "WPT setters {setter} #{index}" {{')
-    lines.append(f'  let url = @url.Url::parse("{href}")')
-    lines.append(f'  url.{setter_method(setter)}("{new_value}")')
+    if setter == "href":
+        # The href setter is a full re-parse; the immutable API spells it as
+        # a plain parse() of the new value.
+        lines.append(f'  let url = @url.Url::parse("{new_value}")')
+    elif setter in RAISING_SETTERS:
+        lines.append(f'  let url = @url.Url::parse("{href}")')
+        lines.append(
+            f'  let url = url.with_{setter}("{new_value}") catch {{ _ => url }}'
+        )
+    else:
+        lines.append(f'  let url = @url.Url::parse("{href}")')
+        lines.append(f'  let url = url.with_{setter}("{new_value}")')
 
     for field in FIELD_ORDER:
         if field not in expected:

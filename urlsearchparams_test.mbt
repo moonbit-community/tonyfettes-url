@@ -84,16 +84,23 @@ test "@url.UrlSearchParams::to_string unicode encoding" {
 ///|
 test "@url.UrlSearchParams::append" {
   let params = @url.UrlSearchParams::new()
-  params.append("foo", "bar")
-  params.append("baz", "qux")
+    .append("foo", "bar")
+    .append("baz", "qux")
   assert_eq(params.size(), 2)
   assert_eq(params.to_string(), "foo=bar&baz=qux")
 }
 
 ///|
+test "@url.UrlSearchParams::append leaves the receiver unchanged" {
+  let params = @url.UrlSearchParams::from_string("a=1")
+  let appended = params.append("b", "2")
+  assert_eq(params.to_string(), "a=1")
+  assert_eq(appended.to_string(), "a=1&b=2")
+}
+
+///|
 test "@url.UrlSearchParams::delete without value" {
-  let params = @url.UrlSearchParams::from_string("a=1&b=2&a=3")
-  params.delete("a")
+  let params = @url.UrlSearchParams::from_string("a=1&b=2&a=3").delete("a")
   assert_eq(params.size(), 1)
   assert_eq(params.get("a"), None)
   assert_eq(params.get("b"), Some("2"))
@@ -101,8 +108,10 @@ test "@url.UrlSearchParams::delete without value" {
 
 ///|
 test "@url.UrlSearchParams::delete with value filter" {
-  let params = @url.UrlSearchParams::from_string("a=1&a=2&a=3")
-  params.delete("a", value="2")
+  let params = @url.UrlSearchParams::from_string("a=1&a=2&a=3").delete(
+    "a",
+    value="2",
+  )
   assert_eq(params.size(), 2)
   assert_eq(params.get_all("a"), ["1", "3"])
 }
@@ -145,8 +154,7 @@ test "@url.UrlSearchParams::has with value" {
 
 ///|
 test "@url.UrlSearchParams::set replaces existing" {
-  let params = @url.UrlSearchParams::from_string("a=1&b=2&a=3")
-  params.set("a", "new")
+  let params = @url.UrlSearchParams::from_string("a=1&b=2&a=3").set("a", "new")
   assert_eq(params.size(), 2)
   assert_eq(params.get("a"), Some("new"))
   assert_eq(params.get_all("a"), ["new"])
@@ -154,24 +162,21 @@ test "@url.UrlSearchParams::set replaces existing" {
 
 ///|
 test "@url.UrlSearchParams::set appends if not found" {
-  let params = @url.UrlSearchParams::from_string("a=1")
-  params.set("b", "2")
+  let params = @url.UrlSearchParams::from_string("a=1").set("b", "2")
   assert_eq(params.size(), 2)
   assert_eq(params.get("b"), Some("2"))
 }
 
 ///|
 test "@url.UrlSearchParams::sort" {
-  let params = @url.UrlSearchParams::from_string("c=1&a=2&b=3&a=4")
-  params.sort()
+  let params = @url.UrlSearchParams::from_string("c=1&a=2&b=3&a=4").sort()
   assert_eq(params.to_string(), "a=2&a=4&b=3&c=1")
 }
 
 ///|
 test "@url.UrlSearchParams::sort stability" {
   // Sort should be stable - equal keys maintain original order
-  let params = @url.UrlSearchParams::from_string("a=first&b=1&a=second&a=third")
-  params.sort()
+  let params = @url.UrlSearchParams::from_string("a=first&b=1&a=second&a=third").sort()
   assert_eq(params.get_all("a"), ["first", "second", "third"])
 }
 
@@ -271,33 +276,34 @@ test "Url::search_params with empty query" {
 }
 
 ///|
-test "Url::set_search_params" {
-  let url = @url.Url::parse("https://example.com/path")
+test "Url::with_search_params" {
   let params = @url.UrlSearchParams::new()
-  params.append("foo", "bar")
-  params.append("baz", "qux")
-  url.set_search_params(params)
+    .append("foo", "bar")
+    .append("baz", "qux")
+  let url = @url.Url::parse("https://example.com/path").with_search_params(
+    params,
+  )
   assert_eq(url.search(), "?foo=bar&baz=qux")
 }
 
 ///|
-test "Url::set_search_params empty clears query" {
-  let url = @url.Url::parse("https://example.com/path?foo=bar")
-  url.set_search_params(@url.UrlSearchParams::new())
+test "Url::with_search_params empty clears query" {
+  let url = @url.Url::parse("https://example.com/path?foo=bar").with_search_params(
+    @url.UrlSearchParams::new(),
+  )
   assert_eq(url.search(), "")
 }
 
 ///|
 test "Url search_params roundtrip" {
   let url = @url.Url::parse("https://example.com/path?a=1&b=hello%20world")
-  let params = url.search_params()
-  // Modify the params
-  params.set("a", "modified")
-  params.append("c", "new")
-  url.set_search_params(params)
-  // Verify the URL was updated
-  let new_params = url.search_params()
+  // Modify the params and build an updated URL
+  let params = url.search_params().set("a", "modified").append("c", "new")
+  let updated = url.with_search_params(params)
+  // Verify the updated URL, and that the original is untouched
+  let new_params = updated.search_params()
   assert_eq(new_params.get("a"), Some("modified"))
   assert_eq(new_params.get("b"), Some("hello world"))
   assert_eq(new_params.get("c"), Some("new"))
+  assert_eq(url.search(), "?a=1&b=hello%20world")
 }

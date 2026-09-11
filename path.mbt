@@ -6,7 +6,7 @@
 enum Path {
   Opaque(String)
   Segments(Array[String])
-}
+} derive(Eq)
 
 ///|
 /// Serialize path per WHATWG URL spec.

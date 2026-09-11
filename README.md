@@ -10,40 +10,45 @@ moon add tonyfettes/url
 
 ## Usage
 
+`Url` values are immutable: parsing produces a value that never changes, and
+the `with_*` methods return an updated copy instead of modifying the receiver.
+
 ```moonbit
-// Parse a URL
-let url = @url.Url::parse("https://user:pass@example.com:8080/path?query=value#fragment")
-match url {
-  Some(url) => {
-    println(url.protocol())   // "https:"
-    println(url.hostname())   // "example.com"
-    println(url.pathname())   // "/path"
-    println(url.search())     // "?query=value"
-    println(url.hash())       // "#fragment"
-    println(url.to_string())  // full URL
-  }
-  None => println("Invalid URL")
+// Parse a URL (raises ValidationErrors on invalid input)
+let url = @url.parse("https://user:pass@example.com:8080/path?query=value#fragment")
+println(url.protocol())   // "https:"
+println(url.hostname())   // "example.com"
+println(url.pathname())   // "/path"
+println(url.search())     // "?query=value"
+println(url.hash())       // "#fragment"
+println(url.to_string())  // full URL
+
+// Or get a Url? instead of raising
+if @url.try_parse("not a url") is None {
+  println("Invalid URL")
 }
 
 // Parse relative URLs with a base
-let base = @url.Url::parse("https://example.com/a/b/c").unwrap()
-let relative = @url.Url::parse("../d", base~)
+let base = @url.parse("https://example.com/a/b/c")
+let relative = @url.parse("../d", base~)
 // Result: "https://example.com/a/d"
 
-// Modify URL components
-let url = @url.Url::parse("http://example.com/path").unwrap()
-url.set_protocol("https:")
-url.set_port("8080")
-url.set_pathname("/new/path")
-url.set_search("?foo=bar")
-url.set_hash("#section")
+// Derive updated URLs; the original is untouched
+let updated = @url.parse("http://example.com/path")
+  .with_protocol("https:")
+  .with_port("8080")
+  .with_pathname("/new/path")
+  .with_search("?foo=bar")
+  .with_hash("#section")
+// Result: "https://example.com:8080/new/path?foo=bar#section"
 ```
 
 ## API
 
 ### Parsing
 
-- `Url::parse(input: String, base?: Url) -> Url?` - Parse a URL string, optionally with a base URL for relative resolution
+- `parse(input: String, base?: Url) -> Url raise ValidationErrors` - Parse a URL string, optionally with a base URL for relative resolution
+- `try_parse(input: String, base?: Url, validation_errors?: Array[ValidationError]) -> Url?` - Like `parse`, but returns `None` on failure
 
 ### Getters
 
@@ -51,29 +56,49 @@ url.set_hash("#section")
 |--------|-------------|
 | `href()` | Full serialized URL |
 | `protocol()` | Scheme with trailing colon (e.g., `"https:"`) |
-| `get_username()` | Username component |
-| `get_password()` | Password component |
-| `get_host()` | Host with port (e.g., `"example.com:8080"`) |
+| `username()` | Username component |
+| `password()` | Password component |
+| `host()` | Host with port (e.g., `"example.com:8080"`) |
 | `hostname()` | Host without port |
-| `get_port()` | Port as string (empty if default/none) |
+| `port()` | Port as string (empty if default/none) |
 | `pathname()` | Path component |
 | `search()` | Query string with leading `?` |
 | `hash()` | Fragment with leading `#` |
 | `origin()` | Origin (scheme + host + port) |
 
-### Setters
+### Builders
+
+Each `with_*` method returns a new `Url` with one component replaced,
+following the WHATWG setter steps. Methods that can reject the value raise a
+`ValidationError`; catching it and keeping the original URL reproduces the
+silent-ignore behavior of the JavaScript `URL` setters.
 
 | Method | Description |
 |--------|-------------|
-| `set_protocol(protocol: String)` | Set scheme |
-| `set_username(username: String)` | Set username |
-| `set_password(password: String)` | Set password |
-| `set_host(host: String)` | Set host (with optional port) |
-| `set_hostname(hostname: String)` | Set hostname only |
-| `set_port(port: String)` | Set port |
-| `set_pathname(pathname: String)` | Set path |
-| `set_search(search: String)` | Set query string |
-| `set_hash(hash: String)` | Set fragment |
+| `with_protocol(protocol: String) raise` | Scheme (special ↔ non-special changes raise) |
+| `with_username(username: String) raise` | Username |
+| `with_password(password: String) raise` | Password |
+| `with_host(host: String) raise` | Host (with optional port) |
+| `with_hostname(hostname: String) raise` | Hostname only |
+| `with_port(port: String) raise` | Port (`""` removes it) |
+| `with_pathname(pathname: String) raise` | Path |
+| `with_search(search: String)` | Query string (`""` removes it) |
+| `with_hash(hash: String)` | Fragment (`""` removes it) |
+| `with_search_params(params: UrlSearchParams)` | Query from search params |
+
+### UrlSearchParams
+
+`UrlSearchParams` is immutable as well: `append`, `set`, `delete`, and `sort`
+return a new instance.
+
+```moonbit
+let params = @url.UrlSearchParams::from_string("a=1&b=2")
+  .append("c", "3")
+  .set("a", "updated")
+  .delete("b")
+let url = @url.parse("https://example.com/").with_search_params(params)
+// Result: "https://example.com/?a=updated&c=3"
+```
 
 ### Host Types
 

@@ -6,7 +6,7 @@ let hex_chars : FixedArray[Char] = [
 
 ///|
 /// Represents an IPv6 address as 8 16-bit pieces
-struct IPv6(FixedArray[UInt16]) derive(Debug)
+struct IPv6(FixedArray[UInt16]) derive(Debug, Eq)
 
 ///|
 /// Serialize IPv6 address per WHATWG URL spec
