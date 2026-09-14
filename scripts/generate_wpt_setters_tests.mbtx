@@ -1,0 +1,222 @@
+///|
+import {
+  "moonbitlang/async@0.21.3",
+  "moonbitlang/async@0.21.3/http",
+  "moonbitlang/async@0.21.3/fs",
+  "moonbitlang/core/env",
+}
+
+///|
+/// Generate `wpt_setters_test.mbt` from the WPT setters test data.
+///
+/// Usage:
+///   moon run --target native scripts/generate_wpt_setters_tests.mbtx [setters_tests.json] > wpt_setters_test.mbt
+///
+/// Without an argument the data is fetched from the WPT repository.
+///
+/// Only the sections whose JavaScript setter has a typed counterpart with the
+/// same rules are generated: protocol, username, password, pathname, search
+/// and hash. The host, hostname, port and href sections test string parsing
+/// (`host = "example.com:8080"`) that the typed API does not do.
+const SOURCE = "https://raw.githubusercontent.com/web-platform-tests/wpt/master/url/resources/setters_tests.json"
+
+///|
+let sections : Array[String] = [
+  "protocol", "username", "password", "pathname", "search", "hash",
+]
+
+///|
+/// Expected fields in the order they are asserted. The generated sections
+/// never expect `host` or `hostname`, so no helper is emitted for them.
+let fields : Array[String] = [
+  "href", "protocol", "username", "password", "port", "pathname", "search", "hash",
+]
+
+///|
+/// Escape a string as a MoonBit string literal body.
+fn escape(value : String) -> String {
+  let out = StringBuilder()
+  for c in value {
+    let code = c.to_int()
+    if c == '\\' {
+      out.write_string("\\\\")
+    } else if c == '"' {
+      out.write_string("\\\"")
+    } else if c == '\n' {
+      out.write_string("\\n")
+    } else if c == '\r' {
+      out.write_string("\\r")
+    } else if c == '\t' {
+      out.write_string("\\t")
+    } else if code < 32 || code == 127 || code > 126 {
+      out.write_string("\\u{\{code.to_string(radix=16).to_upper()}}")
+    } else {
+      out.write_char(c)
+    }
+  }
+  out.to_string()
+}
+
+///|
+/// Remove ASCII tab and newline, as the basic URL parser does with its input.
+fn strip_tab_newline(value : String) -> String {
+  let out = StringBuilder()
+  for c in value {
+    if c != '\t' && c != '\n' && c != '\r' {
+      out.write_char(c)
+    }
+  }
+  out.to_string()
+}
+
+///|
+/// The statement applying `new_value` to `url` with the typed setter that
+/// matches the JavaScript setter of `section`. Rejected updates are ignored,
+/// as the JavaScript setters do, so the assertions check the resulting state.
+fn setter_statement(section : String, value : String) -> String? {
+  match section {
+    "protocol" => {
+      // The protocol setter parses `value + ":"` from the scheme start state:
+      // tabs and newlines vanish and everything after the first ":" is ignored.
+      let scheme = strip_tab_newline(value)
+      let scheme = if scheme.find(":") is Some(colon) {
+        scheme[:colon].to_owned()
+      } else {
+        scheme
+      }
+      Some("try url.set_scheme(\"\{escape(scheme)}\") catch {\n    _ => ()\n  }")
+    }
+    "username" =>
+      Some("try url.set_username(\"\{escape(value)}\") catch {\n    _ => ()\n  }")
+    "password" =>
+      Some("try url.set_password(\"\{escape(value)}\") catch {\n    _ => ()\n  }")
+    "pathname" =>
+      Some("try url.set_pathname(\"\{escape(value)}\") catch {\n    _ => ()\n  }")
+    "search" =>
+      // The search setter maps "" to a null query and drops one leading "?".
+      if value.is_empty() {
+        Some("url.set_query(None)")
+      } else {
+        let query = value.strip_prefix("?").map(view => view.to_owned()).unwrap_or(value)
+        Some("url.set_query(Some(\"\{escape(query)}\"))")
+      }
+    "hash" =>
+      if value.is_empty() {
+        Some("url.set_fragment(None)")
+      } else {
+        let fragment = value.strip_prefix("#").map(view => view.to_owned()).unwrap_or(value)
+        Some("url.set_fragment(Some(\"\{escape(fragment)}\"))")
+      }
+    _ => None
+  }
+}
+
+///|
+/// Expression yielding the JavaScript getter view of `url` for `field`.
+fn getter_expression(field : String) -> String {
+  match field {
+    "username" | "password" => "url.\{field}()"
+    _ => "js_\{field}(url)"
+  }
+}
+
+///|
+const HEADER =
+  #|// Auto-generated from WPT setters_tests.json
+  #|// https://github.com/web-platform-tests/wpt/blob/master/url/resources/setters_tests.json
+  #|// Do not edit manually
+  #|//
+  #|// To regenerate:
+  #|//   moon run --target native scripts/generate_wpt_setters_tests.mbtx > wpt_setters_test.mbt
+  #|//
+  #|// Only the protocol, username, password, pathname, search and hash sections
+  #|// are generated: their JavaScript setters have typed counterparts with the
+  #|// same rules. Rejected updates are ignored as the JavaScript setters do, and
+  #|// the expected values are the JavaScript getter views, computed here from
+  #|// the typed getters.
+  #|
+  #|///|
+  #|fn js_href(url : @url.Url) -> String {
+  #|  url.to_string()
+  #|}
+  #|
+  #|///|
+  #|fn js_protocol(url : @url.Url) -> String {
+  #|  "\{url.scheme()}:"
+  #|}
+  #|
+  #|///|
+  #|fn js_port(url : @url.Url) -> String {
+  #|  if url.port() is Some(port) {
+  #|    port.to_string()
+  #|  } else {
+  #|    ""
+  #|  }
+  #|}
+  #|
+  #|///|
+  #|fn js_pathname(url : @url.Url) -> String {
+  #|  url.path().to_string()
+  #|}
+  #|
+  #|///|
+  #|fn js_search(url : @url.Url) -> String {
+  #|  match url.query() {
+  #|    Some("") | None => ""
+  #|    Some(query) => "?\{query}"
+  #|  }
+  #|}
+  #|
+  #|///|
+  #|fn js_hash(url : @url.Url) -> String {
+  #|  match url.fragment() {
+  #|    Some("") | None => ""
+  #|    Some(fragment) => "#\{fragment}"
+  #|  }
+  #|}
+  #|
+
+///|
+fn generate(root : Json) -> String raise {
+  guard root is Object(data) else { fail("setters_tests.json: expected an object") }
+  let out = StringBuilder()
+  out.write_string(HEADER)
+  for section in sections {
+    guard data.get(section) is Some(Array(tests)) else { continue }
+    for index, item in tests {
+      guard item is Object(entry) &&
+        entry.get("href") is Some(String(href)) &&
+        entry.get("new_value") is Some(String(new_value)) &&
+        entry.get("expected") is Some(Object(expected)) else {
+        fail("\{section} #\{index}: unexpected shape")
+      }
+      guard setter_statement(section, new_value) is Some(statement) else {
+        continue
+      }
+      out.write_string("\n///|\n")
+      out.write_string("test \"WPT setters \{section} #\{index}\" {\n")
+      out.write_string("  let url = @url.Url::parse(\"\{escape(href)}\")\n")
+      out.write_string("  \{statement}\n")
+      for field in fields {
+        guard expected.get(field) is Some(String(value)) else { continue }
+        out.write_string(
+          "  assert_eq(\{getter_expression(field)}, \"\{escape(value)}\")\n",
+        )
+      }
+      out.write_string("}\n")
+    }
+  }
+  out.to_string()
+}
+
+///|
+async fn main {
+  let args = @env.args()
+  let root = if args.length() > 1 {
+    @fs.read_file(args[1]).json()
+  } else {
+    let (_, body) = @http.get(SOURCE)
+    body.json()
+  }
+  println(generate(root))
+}

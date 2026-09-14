@@ -149,7 +149,7 @@ and `fragment()` instead.
 ## Features
 
 - Full WHATWG URL Standard compliance
-- 980+ WPT test vectors passing (parsing and `URLSearchParams`)
+- 1100+ WPT test vectors passing (parsing, setters, `URLSearchParams`)
 - Special scheme handling (http, https, ftp, file, ws, wss)
 - Default port normalization
 - Relative URL resolution
@@ -171,7 +171,13 @@ Regenerate the WPT tests:
 
 ```bash
 python3 scripts/generate_wpt_tests.py > wpt_test.mbt
+moon run --target native scripts/generate_wpt_setters_tests.mbtx > wpt_setters_test.mbt
 ```
+
+The setters generator fetches `setters_tests.json` from the WPT repository;
+pass a local copy as its first argument to work offline. It covers the
+protocol, username, password, pathname, search and hash sections, whose
+JavaScript setters have typed counterparts with the same rules.
 
 ## License
 

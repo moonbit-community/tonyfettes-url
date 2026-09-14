@@ -277,13 +277,15 @@ fn Url::cannot_have_credentials_or_port(self : Url) -> Bool {
 /// Set the scheme in place.
 /// See: https://url.spec.whatwg.org/#dom-url-protocol
 ///
-/// The scheme is lowercased, and a port equal to the new scheme's default port
-/// becomes `None`. Raises `InvalidScheme` on bad syntax,
+/// ASCII tab and newline are removed as the parser does, the scheme is
+/// lowercased, and a port equal to the new scheme's default port becomes
+/// `None`. Raises `InvalidScheme` on bad syntax,
 /// `SpecialSchemeMismatch` when exchanging a special scheme for a non-special
 /// one or the reverse, `CannotHaveCredentialsOrPort` when switching to `file`
 /// while credentials or a port are present, and `HostRequired` when switching
 /// away from a `file` URL whose host is empty.
 pub fn Url::set_scheme(self : Url, scheme : String) -> Unit raise UpdateError {
+  let scheme = remove_ascii_tab_or_newline(scheme[:])
   guard scheme[:] is [first, .. rest] && first.is_ascii_alphabetic() else {
     raise InvalidScheme
   }
@@ -557,14 +559,18 @@ pub fn Url::with_pathname(
 }
 
 ///|
+
+///|
 /// Set the query in place, percent-encoded with the query set (the
-/// special-query set for special schemes). `None` removes the query;
-/// `Some("")` keeps a bare `?`.
+/// special-query set for special schemes); ASCII tab and newline are removed
+/// as the parser does. `None` removes the query; `Some("")` keeps a bare `?`.
+/// Removing the query of a URL with an opaque path and no fragment also
+/// strips trailing spaces from the path, as the standard requires.
 /// See: https://url.spec.whatwg.org/#dom-url-search
 pub fn Url::set_query(self : Url, query : String?) -> Unit {
   self.query = query.map(query => {
     utf8_percent_encode(
-      query,
+      remove_ascii_tab_or_newline(query[:]),
       if self.is_special() {
         special_query_percent_encode_set
       } else {
@@ -572,6 +578,7 @@ pub fn Url::set_query(self : Url, query : String?) -> Unit {
       },
     )
   })
+  self.potentially_strip_trailing_spaces_from_opaque_path()
 }
 
 ///|
@@ -583,13 +590,41 @@ pub fn Url::with_query(self : Url, query : String?) -> Url {
 }
 
 ///|
-/// Set the fragment in place, percent-encoded with the fragment set. `None`
-/// removes the fragment; `Some("")` keeps a bare `#`.
+
+///|
+/// Set the fragment in place, percent-encoded with the fragment set; ASCII
+/// tab and newline are removed as the parser does. `None` removes the
+/// fragment; `Some("")` keeps a bare `#`. Removing the fragment of a URL
+/// with an opaque path and no query also strips trailing spaces from the
+/// path, as the standard requires.
 /// See: https://url.spec.whatwg.org/#dom-url-hash
 pub fn Url::set_fragment(self : Url, fragment : String?) -> Unit {
   self.fragment = fragment.map(fragment => {
-    utf8_percent_encode(fragment, fragment_percent_encode_set)
+    utf8_percent_encode(
+      remove_ascii_tab_or_newline(fragment[:]),
+      fragment_percent_encode_set,
+    )
   })
+  self.potentially_strip_trailing_spaces_from_opaque_path()
+}
+
+///|
+/// See: https://url.spec.whatwg.org/#potentially-strip-trailing-spaces-from-an-opaque-path
+/// 1. If url does not have an opaque path, then return.
+/// 2. If url's fragment is non-null, then return.
+/// 3. If url's query is non-null, then return.
+/// 4. Remove all trailing U+0020 SPACE code points from url's path.
+fn Url::potentially_strip_trailing_spaces_from_opaque_path(self : Url) -> Unit {
+  guard self.path is Opaque(path) && self.fragment is None && self.query is None else {
+    return
+  }
+  let mut end = path.length()
+  while end > 0 && path[end - 1] == ' ' {
+    end -= 1
+  }
+  if end < path.length() {
+    self.path = Opaque(path[:end].to_owned())
+  }
 }
 
 ///|
