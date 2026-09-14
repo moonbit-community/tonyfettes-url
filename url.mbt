@@ -102,24 +102,21 @@ pub fn Url::to_string(self : Url) -> String {
   //    by the string to output.
   match self.path {
     Opaque(path) => result.write_string(path)
-    Segments(segments) =>
-      if segments.is_empty() && self.host is Some(_) && self.is_special() {
-        result.write_char('/')
-      } else {
-        // 3. (continued) If url's host is null, url does not have an opaque path,
-        //    url's path's size is greater than 1, and url's path[0] is the empty
-        //    string, then append U+002F (/) and U+002E (.) to output.
-        if self.host is None && segments.length() > 1 {
-          match segments[0] {
-            "" => result.write_string("/.")
-            _ => ()
-          }
-        }
-        for segment in segments {
-          result.write_char('/')
-          result.write_string(segment)
+    Segments(segments) => {
+      // 3. (continued) If url's host is null, url does not have an opaque path,
+      //    url's path's size is greater than 1, and url's path[0] is the empty
+      //    string, then append U+002F (/) and U+002E (.) to output.
+      if self.host is None && segments.length() > 1 {
+        match segments[0] {
+          "" => result.write_string("/.")
+          _ => ()
         }
       }
+      for segment in segments {
+        result.write_char('/')
+        result.write_string(segment)
+      }
+    }
   }
   // 6. If url's query is non-null, append U+003F (?), followed by url's query,
   //    to output.
@@ -171,6 +168,13 @@ pub fn Url::port(self : Url) -> UInt16? {
 /// The path, either opaque or a list of segments.
 pub fn Url::path(self : Url) -> Path {
   self.path
+}
+
+///|
+/// The path segments, or `None` when the path is opaque. Shorthand for
+/// `path().segments()`.
+pub fn Url::path_segments(self : Url) -> Iter[String]? {
+  self.path.segments()
 }
 
 ///|
@@ -448,6 +452,52 @@ pub fn Url::with_path(self : Url, path : Path) -> Url raise UpdateError {
       Segments(encoded)
     }
   }
+  url
+}
+
+///|
+/// Replace the path by parsing `pathname` with the path start state as state
+/// override, exactly as the pathname setter does. The caller has already
+/// checked that the path is not opaque.
+/// See: https://url.spec.whatwg.org/#dom-url-pathname
+fn Url::reparse_pathname(self : Url, pathname : String) -> Unit {
+  let cleaned = remove_ascii_tab_or_newline(pathname[:])
+  if cleaned.is_empty() {
+    // Path start state with a state override appends the empty string when
+    // the URL is special or has no host.
+    if self.is_special() || self.host is None {
+      self.path = Segments([""])
+    } else {
+      self.path = Segments([])
+    }
+    return
+  }
+  // 2. Empty this's URL's path.
+  self.path = Segments([])
+  // 3. Basic URL parse the given value with this's URL as url and path start
+  //    state as state override. The path states have no failure branch.
+  ignore(Url::parse_basic(self, cleaned[:], state_override=PathStart)) catch {
+    _ => ()
+  }
+}
+
+///|
+/// Return a copy whose path is parsed from `pathname`, with the same rules
+/// as the JavaScript `pathname` setter: `.` and `..` segments are resolved,
+/// characters outside the path set are percent-encoded (including `?` and
+/// `#`), `\` counts as `/` on special URLs, and a `file` URL normalizes a
+/// Windows drive letter. A `/` that should stay inside a segment must be
+/// written as `%2F`. The result is never an opaque path.
+/// See: https://url.spec.whatwg.org/#dom-url-pathname
+///
+/// Raises `HasOpaquePath` when the URL has an opaque path.
+pub fn Url::with_pathname(
+  self : Url,
+  pathname : String,
+) -> Url raise UpdateError {
+  guard self.path is Segments(_) else { raise HasOpaquePath }
+  let url = self.clone()
+  url.reparse_pathname(pathname)
   url
 }
 
@@ -1913,6 +1963,13 @@ fn Url::parse_basic(
       _ => ()
     }
     break // Exit outer loop after successful EOF handling
+  }
+  // The path state appends its buffer at end of input, so a special URL always
+  // has at least one segment: "http://example.com" has the path [""] and
+  // serializes with a trailing "/". The EOF handling above reaches this point
+  // with an empty list for some states; normalize once here.
+  if url.is_special() && url.path is Segments([]) {
+    url.path = Segments([""])
   }
   url
 }

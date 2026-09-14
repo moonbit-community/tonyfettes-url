@@ -68,7 +68,8 @@ JavaScript `URL` interface.
 | `username()` / `password()` | `String`, empty when absent |
 | `host()` | `Host?` |
 | `port()` | `UInt16?`, `None` when absent or equal to the scheme's default port |
-| `path()` | `Path`, opaque or a list of segments; `to_string()` serializes it |
+| `path()` | `Path`; `is_opaque()`, `segments() -> Iter[String]?` and `to_string()` inspect it |
+| `path_segments()` | `Iter[String]?`, shorthand for `path().segments()` |
 | `query()` / `fragment()` | `String?`, `Some("")` for a present but empty value |
 | `search_params()` | `UrlSearchParams` parsed from the query; not live-bound to the URL |
 | `origin()` | `Origin` |
@@ -79,6 +80,9 @@ JavaScript `URL` interface.
 `with_*` methods return a modified copy and never touch the receiver.
 Values are normalized and percent-encoded the way the parser would. Updates the
 URL Standard forbids raise `UpdateError` instead of being silently ignored.
+`with_pathname` parses a path string with the rules of the JavaScript
+`pathname` setter, resolving `.` and `..`; `with_path` transplants another
+URL's `Path` as is.
 
 | Method | Raises |
 |--------|--------|
@@ -86,6 +90,7 @@ URL Standard forbids raise `UpdateError` instead of being silently ignored.
 | `with_username(String)` / `with_password(String)` | `CannotHaveCredentialsOrPort` |
 | `with_host(Host?)` | `HasOpaquePath`, `HostRequired`, `HostKindMismatch`, `CannotHaveCredentialsOrPort` |
 | `with_port(UInt16?)` | `CannotHaveCredentialsOrPort` |
+| `with_pathname(String)` | `HasOpaquePath` |
 | `with_path(Path)` | `InvalidPath` |
 | `with_query(String?)` / `with_fragment(String?)` | never |
 | `with_search_params(UrlSearchParams)` | never |

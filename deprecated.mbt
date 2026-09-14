@@ -211,26 +211,16 @@ pub fn Url::set_port(self : Url, port_str : String) -> Unit {
 /// 2. Empty this's URL's path.
 /// 3. Basic URL parse the given value with this's URL as url and path start
 ///    state as state override.
-#deprecated("Use Url::with_path", skip_current_package=true)
+#deprecated("Use Url::with_pathname", skip_current_package=true)
 pub fn Url::set_pathname(self : Url, pathname : String) -> Unit {
   // 1. If this's URL has an opaque path, then return.
   if self.path is Opaque(_) {
     return
   }
-  let cleaned = remove_ascii_tab_or_newline(pathname[:])
-  if cleaned.is_empty() {
-    if self.is_special() || self.host is None {
-      self.path = Segments([""])
-    } else {
-      self.path = Segments([])
-    }
-    return
-  }
   // 2. Empty this's URL's path.
-  self.path = Segments([])
   // 3. Basic URL parse the given value with this's URL as url and path start
   //    state as state override.
-  self.parse_with_state(cleaned[:], PathStart)
+  self.reparse_pathname(pathname)
 }
 
 ///|

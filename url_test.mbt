@@ -244,6 +244,85 @@ test "Url::with_host" {
 }
 
 ///|
+test "Url::with_pathname parses like the pathname setter" {
+  let url = @url.Url::parse("http://example.com/old?q#f")
+  let cases = ["/a/./b/../c", "a b?c#d", "\\x\\y", "", "/a%2Fb", "/x/"]
+  let outcomes = cases.map(pathname => {
+    (pathname, url.with_pathname(pathname).to_string())
+  })
+  debug_inspect(
+    outcomes,
+    content=(
+      #|[
+      #|  ("/a/./b/../c", "http://example.com/a/c?q#f"),
+      #|  ("a b?c#d", "http://example.com/a%20b%3Fc%23d?q#f"),
+      #|  ("\\x\\y", "http://example.com/x/y?q#f"),
+      #|  ("", "http://example.com/?q#f"),
+      #|  ("/a%2Fb", "http://example.com/a%2Fb?q#f"),
+      #|  ("/x/", "http://example.com/x/?q#f"),
+      #|]
+    ),
+  )
+  // The original is untouched.
+  assert_eq(url.to_string(), "http://example.com/old?q#f")
+  // A file URL normalizes a Windows drive letter.
+  assert_eq(
+    @url.Url::parse("file:///tmp/x").with_pathname("/C|/dir").to_string(),
+    "file:///C:/dir",
+  )
+  // An empty pathname on a non-special URL with a host leaves no segments.
+  assert_eq(
+    @url.Url::parse("foo://host/a").with_pathname("").to_string(),
+    "foo://host",
+  )
+  // An opaque path cannot be replaced.
+  let outcome = try @url.Url::parse("mailto:x@y").with_pathname("/a") catch {
+    err => Err(err)
+  } noraise {
+    url => Ok(url.to_string())
+  }
+  debug_inspect(
+    outcome,
+    content=(
+      #|Err(HasOpaquePath)
+    ),
+  )
+}
+
+///|
+test "Path views" {
+  let segments = @url.Url::parse("http://example.com/a/b%20c/").path()
+  inspect(segments.is_opaque(), content="false")
+  debug_inspect(
+    segments.segments().map(iter => iter.to_array()),
+    content=(
+      #|Some(["a", "b%20c", ""])
+    ),
+  )
+  let root = @url.Url::parse("http://example.com").path()
+  debug_inspect(
+    root.segments().map(iter => iter.to_array()),
+    content="Some([\"\"])",
+  )
+  let opaque_path = @url.Url::parse("mailto:someone@example.com").path()
+  inspect(opaque_path.is_opaque(), content="true")
+  debug_inspect(
+    opaque_path.segments().map(iter => iter.to_array()),
+    content=(
+      #|None
+    ),
+  )
+  debug_inspect(
+    @url.Url::parse("http://example.com/x/y")
+    .path_segments()
+    .map(iter => iter.to_array()),
+    content=(
+      #|Some(["x", "y"])
+    ),
+  )
+}
+
+///|
 test "Url::with_query and Url::with_fragment accept None and empty" {
   let url = @url.Url::parse("http://example.com/?a=1#top")
   assert_eq(url.with_query(None).to_string(), "http://example.com/#top")

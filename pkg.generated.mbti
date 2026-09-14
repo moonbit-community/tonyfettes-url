@@ -81,6 +81,8 @@ pub fn Origin::to_string(Self) -> String
 pub impl Show for Origin
 
 type Path
+pub fn Path::is_opaque(Self) -> Bool
+pub fn Path::segments(Self) -> Iter[String]?
 pub fn Path::to_string(Self) -> String
 pub impl Show for Path
 
@@ -96,6 +98,7 @@ pub fn Url::origin(Self) -> Origin
 pub fn Url::parse(StringView, base? : Self, validation_errors? : Array[ValidationError]) -> Self raise ValidationError
 pub fn Url::password(Self) -> String
 pub fn Url::path(Self) -> Path
+pub fn Url::path_segments(Self) -> Iter[String]?
 pub fn Url::port(Self) -> UInt16?
 #deprecated
 pub fn Url::protocol(Self) -> String
@@ -132,6 +135,7 @@ pub fn Url::with_fragment(Self, String?) -> Self
 pub fn Url::with_host(Self, Host?) -> Self raise UpdateError
 pub fn Url::with_password(Self, String) -> Self raise UpdateError
 pub fn Url::with_path(Self, Path) -> Self raise UpdateError
+pub fn Url::with_pathname(Self, String) -> Self raise UpdateError
 pub fn Url::with_port(Self, UInt16?) -> Self raise UpdateError
 pub fn Url::with_query(Self, String?) -> Self
 pub fn Url::with_scheme(Self, String) -> Self raise UpdateError
