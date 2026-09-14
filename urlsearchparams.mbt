@@ -3,11 +3,19 @@
 /// See: https://url.spec.whatwg.org/#interface-urlsearchparams
 /// Provides methods to work with the query string of a URL using
 /// application/x-www-form-urlencoded format.
-///
-/// The wrapped array is the list of name-value pairs itself, not a copy:
-/// `UrlSearchParams(pairs)` shares `pairs` with the caller, and the mutating
-/// methods (`append`, `delete`, `set`, `sort`) modify it in place.
-pub(all) struct UrlSearchParams(Array[(String, String)])
+struct UrlSearchParams {
+  params : Array[(String, String)]
+}
+
+///|
+/// Wrap a list of name-value pairs. The array is used as is, not copied:
+/// the mutating methods (`append`, `delete`, `set`, `sort`) modify it in
+/// place, and changes the caller makes to `params` show through as well.
+pub fn UrlSearchParams::UrlSearchParams(
+  params : Array[(String, String)],
+) -> UrlSearchParams {
+  { params, }
+}
 
 ///|
 /// Parse a query string into UrlSearchParams.
@@ -107,7 +115,7 @@ fn replace_plus_with_space(input : String) -> String {
 /// See: https://url.spec.whatwg.org/#concept-urlencoded-serializer
 pub fn UrlSearchParams::to_string(self : UrlSearchParams) -> String {
   let output = StringBuilder()
-  for i, pair in self.0 {
+  for i, pair in self.params {
     if i > 0 {
       output.write_char('&')
     }
@@ -136,7 +144,7 @@ pub fn UrlSearchParams::to_string(self : UrlSearchParams) -> String {
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-size
 #alias(size, deprecated="Use UrlSearchParams::length")
 pub fn UrlSearchParams::length(self : UrlSearchParams) -> Int {
-  self.0.length()
+  self.params.length()
 }
 
 ///|
@@ -147,7 +155,7 @@ pub fn UrlSearchParams::append(
   name : String,
   value : String,
 ) -> Unit {
-  self.0.push((name, value))
+  self.params.push((name, value))
 }
 
 ///|
@@ -160,8 +168,8 @@ pub fn UrlSearchParams::delete(
   value? : String,
 ) -> Unit {
   match value {
-    Some(v) => self.0.retain(fn(pair) { pair.0 != name || pair.1 != v })
-    None => self.0.retain(fn(pair) { pair.0 != name })
+    Some(v) => self.params.retain(fn(pair) { pair.0 != name || pair.1 != v })
+    None => self.params.retain(fn(pair) { pair.0 != name })
   }
 }
 
@@ -169,7 +177,7 @@ pub fn UrlSearchParams::delete(
 /// Get the first value for the given name, or None if not found.
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-get
 pub fn UrlSearchParams::get(self : UrlSearchParams, name : String) -> String? {
-  for pair in self.0 {
+  for pair in self.params {
     if pair.0 == name {
       return Some(pair.1)
     }
@@ -185,7 +193,7 @@ pub fn UrlSearchParams::get_all(
   name : String,
 ) -> Array[String] {
   let result : Array[String] = []
-  for pair in self.0 {
+  for pair in self.params {
     if pair.0 == name {
       result.push(pair.1)
     }
@@ -203,8 +211,9 @@ pub fn UrlSearchParams::has(
   value? : String,
 ) -> Bool {
   match value {
-    Some(v) => self.0.iter().any(fn(pair) { pair.0 == name && pair.1 == v })
-    None => self.0.iter().any(fn(pair) { pair.0 == name })
+    Some(v) =>
+      self.params.iter().any(fn(pair) { pair.0 == name && pair.1 == v })
+    None => self.params.iter().any(fn(pair) { pair.0 == name })
   }
 }
 
@@ -221,7 +230,7 @@ pub fn UrlSearchParams::set(
   // 1. If list contains any name-value pairs whose name is name, then set the
   //    value of the first such pair to value and remove the others.
   let mut first : Int? = None
-  for index, pair in self.0 {
+  for index, pair in self.params {
     if pair.0 == name {
       first = Some(index)
       break
@@ -229,16 +238,16 @@ pub fn UrlSearchParams::set(
   }
   match first {
     Some(first) => {
-      self.0[first] = (name, value)
+      self.params[first] = (name, value)
       let mut index = 0
-      self.0.retain(fn(pair) {
+      self.params.retain(fn(pair) {
         let keep = pair.0 != name || index == first
         index += 1
         keep
       })
     }
     // 2. Otherwise, append (name, value) to list.
-    None => self.0.push((name, value))
+    None => self.params.push((name, value))
   }
 }
 
@@ -310,7 +319,7 @@ fn compare_utf16_code_units(a : String, b : String) -> Int {
 /// Uses UTF-16 code unit order per WHATWG URL Standard.
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-sort
 pub fn UrlSearchParams::sort(self : UrlSearchParams) -> Unit {
-  self.0.sort_by(fn(a, b) { compare_utf16_code_units(a.0, b.0) })
+  self.params.sort_by(fn(a, b) { compare_utf16_code_units(a.0, b.0) })
 }
 
 ///|
@@ -318,21 +327,21 @@ pub fn UrlSearchParams::sort(self : UrlSearchParams) -> Unit {
 /// See: https://url.spec.whatwg.org/#urlsearchparams-iteration
 #alias(entries, deprecated="Use UrlSearchParams::iter")
 pub fn UrlSearchParams::iter(self : UrlSearchParams) -> Iter[(String, String)] {
-  self.0.iter()
+  self.params.iter()
 }
 
 ///|
 /// Iterate over all names.
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-keys
 pub fn UrlSearchParams::keys(self : UrlSearchParams) -> Iter[String] {
-  self.0.iter().map(fn(pair) { pair.0 })
+  self.params.iter().map(fn(pair) { pair.0 })
 }
 
 ///|
 /// Iterate over all values.
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-values
 pub fn UrlSearchParams::values(self : UrlSearchParams) -> Iter[String] {
-  self.0.iter().map(fn(pair) { pair.1 })
+  self.params.iter().map(fn(pair) { pair.1 })
 }
 
 ///|

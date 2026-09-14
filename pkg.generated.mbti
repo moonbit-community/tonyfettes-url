@@ -132,7 +132,8 @@ pub fn Url::with_username(Self, String) -> Self raise UpdateError
 pub impl Show for Url
 pub impl ToJson for Url
 
-pub(all) struct UrlSearchParams(Array[(String, String)])
+type UrlSearchParams
+pub fn UrlSearchParams::UrlSearchParams(Array[(String, String)]) -> Self
 pub fn UrlSearchParams::append(Self, String, String) -> Unit
 pub fn UrlSearchParams::delete(Self, String, value? : String) -> Unit
 pub fn UrlSearchParams::get(Self, String) -> String?
