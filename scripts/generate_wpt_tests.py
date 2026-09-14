@@ -47,9 +47,10 @@ def generate_single_test(index, test):
         # No base URL
         if is_failure:
             # Case B: No base, expects failure
-            lines.append(f'  let result = @url.Url::try_parse("{input_val}")')
-            lines.append('  guard result is None else {')
-            lines.append('    fail("Expected failure but got: \\{result.unwrap().to_string().escape()}")')
+            lines.append(f'  try @url.Url::parse("{input_val}") catch {{')
+            lines.append('    _ => ()')
+            lines.append('  } noraise {')
+            lines.append('    url => fail("Expected failure but got: \\{url.to_string().escape()}")')
             lines.append('  }')
         else:
             # Case A: No base, expects success
@@ -63,9 +64,10 @@ def generate_single_test(index, test):
 
         if is_failure:
             # Case D: With base, expects failure
-            lines.append(f'  let result = @url.Url::try_parse("{input_val}", base=base_url)')
-            lines.append('  guard result is None else {')
-            lines.append('    fail("Expected failure but got: \\{result.unwrap().to_string().escape()}")')
+            lines.append(f'  try @url.Url::parse("{input_val}", base=base_url) catch {{')
+            lines.append('    _ => ()')
+            lines.append('  } noraise {')
+            lines.append('    url => fail("Expected failure but got: \\{url.to_string().escape()}")')
             lines.append('  }')
         else:
             # Case C: With base, expects success

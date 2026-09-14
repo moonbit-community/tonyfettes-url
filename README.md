@@ -1,107 +1,166 @@
-# url
+# tonyfettes/url
 
-WHATWG URL Standard parser implementation in MoonBit. Parses and serializes URLs according to the [WHATWG URL Standard](https://url.spec.whatwg.org/) with web-platform-tests (WPT) compliance.
+WHATWG URL Standard parser for MoonBit. Parses and serializes URLs per
+<https://url.spec.whatwg.org/>, validated against the web-platform-tests
+(WPT) URL test suite.
 
-## Installation
+## Install
 
 ```bash
 moon add tonyfettes/url
 ```
 
-## Usage
+## Quick start
 
 ```moonbit
-// Parse a URL
-let url = @url.Url::parse("https://user:pass@example.com:8080/path?query=value#fragment")
-match url {
-  Some(url) => {
-    println(url.protocol())   // "https:"
-    println(url.hostname())   // "example.com"
-    println(url.pathname())   // "/path"
-    println(url.search())     // "?query=value"
-    println(url.hash())       // "#fragment"
-    println(url.to_string())  // full URL
-  }
-  None => println("Invalid URL")
-}
+let url = @url.Url::parse(
+  "https://user:pass@example.com:8080/path?query=value#fragment",
+)
+url.scheme()        // "https"
+url.host()          // Some(Domain("example.com"))
+url.port()          // Some(8080)
+url.path()          // Segments(["path"]), serializes as "/path"
+url.query()         // Some("query=value")
+url.fragment()      // Some("fragment")
+url.to_string()     // "https://user:pass@example.com:8080/path?query=value#fragment"
 
-// Parse relative URLs with a base
-let base = @url.Url::parse("https://example.com/a/b/c").unwrap()
-let relative = @url.Url::parse("../d", base~)
-// Result: "https://example.com/a/d"
+// Relative resolution
+let base = @url.Url::parse("https://example.com/a/b/c")
+@url.Url::parse("../d", base~).to_string() // "https://example.com/a/d"
 
-// Modify URL components
-let url = @url.Url::parse("http://example.com/path").unwrap()
-url.set_protocol("https:")
-url.set_port("8080")
-url.set_pathname("/new/path")
-url.set_search("?foo=bar")
-url.set_hash("#section")
+// Immutable updates: every with_* returns a new Url
+let updated = url.with_scheme("http").with_port(None).with_fragment(None)
+updated.to_string() // "http://user:pass@example.com/path?query=value"
+url.to_string()     // unchanged
 ```
 
 ## API
 
 ### Parsing
 
-- `Url::parse(input: String, base?: Url) -> Url?` - Parse a URL string, optionally with a base URL for relative resolution
+```moonbit
+Url::parse(input, base?, validation_errors?) -> Url raise ValidationError
+```
+
+Also available as the free function `@url.parse`. When parsing fails it
+raises the `ValidationError` that stopped the parser, for example `HostMissing`
+or `PortOutOfRange`. The spec's non-fatal validation errors, such as
+`SpecialSchemeMissingFollowingSolidus`, do not stop parsing; pass an array as
+`validation_errors` to collect them. To get an `Option` instead of an error:
+
+```moonbit
+let url = try @url.Url::parse(input) catch {
+  _ => None
+} noraise {
+  url => Some(url)
+}
+```
 
 ### Getters
 
-| Method | Description |
-|--------|-------------|
-| `href()` | Full serialized URL |
-| `protocol()` | Scheme with trailing colon (e.g., `"https:"`) |
-| `get_username()` | Username component |
-| `get_password()` | Password component |
-| `get_host()` | Host with port (e.g., `"example.com:8080"`) |
-| `hostname()` | Host without port |
-| `get_port()` | Port as string (empty if default/none) |
-| `pathname()` | Path component |
-| `search()` | Query string with leading `?` |
-| `hash()` | Fragment with leading `#` |
-| `origin()` | Origin (scheme + host + port) |
+Getters return the URL record's components as the spec models them: absent
+components are `None`, and nothing carries the `:`, `?` or `#` prefixes of the
+JavaScript `URL` interface.
 
-### Setters
+| Method | Returns |
+|--------|---------|
+| `scheme()` | `String`, lowercased, without the trailing colon |
+| `username()` / `password()` | `String`, empty when absent |
+| `host()` | `Host?` |
+| `port()` | `UInt16?`, `None` when absent or equal to the scheme's default port |
+| `path()` | `Path`, opaque or a list of segments; `to_string()` serializes it |
+| `query()` / `fragment()` | `String?`, `Some("")` for a present but empty value |
+| `search_params()` | `UrlSearchParams` parsed from the query; not live-bound to the URL |
+| `origin()` | `Origin` |
+| `to_string()` | The serialized URL |
 
-| Method | Description |
-|--------|-------------|
-| `set_protocol(protocol: String)` | Set scheme |
-| `set_username(username: String)` | Set username |
-| `set_password(password: String)` | Set password |
-| `set_host(host: String)` | Set host (with optional port) |
-| `set_hostname(hostname: String)` | Set hostname only |
-| `set_port(port: String)` | Set port |
-| `set_pathname(pathname: String)` | Set path |
-| `set_search(search: String)` | Set query string |
-| `set_hash(hash: String)` | Set fragment |
+### Updates
 
-### Host Types
+`with_*` methods return a modified copy and never touch the receiver.
+Values are normalized and percent-encoded the way the parser would. Updates the
+URL Standard forbids raise `UpdateError` instead of being silently ignored.
 
-The parser recognizes four host types:
+| Method | Raises |
+|--------|--------|
+| `with_scheme(String)` | `InvalidScheme`, `SpecialSchemeMismatch`, `CannotHaveCredentialsOrPort`, `HostRequired` |
+| `with_username(String)` / `with_password(String)` | `CannotHaveCredentialsOrPort` |
+| `with_host(Host?)` | `HasOpaquePath`, `HostRequired`, `HostKindMismatch`, `CannotHaveCredentialsOrPort` |
+| `with_port(UInt16?)` | `CannotHaveCredentialsOrPort` |
+| `with_path(Path)` | `InvalidPath` |
+| `with_query(String?)` / `with_fragment(String?)` | never |
+| `with_search_params(UrlSearchParams)` | never |
 
-- `Domain(String)` - Domain names (with IDNA/Punycode support)
-- `IPv4(IPv4)` - IPv4 addresses (supports decimal, octal, hex notation)
-- `IPv6(IPv6)` - IPv6 addresses (supports `::` compression and IPv4-mapped)
-- `Opaque(String)` - Opaque hosts for non-special schemes
+### Origin
+
+`Url::origin()` returns an `Origin`, which is either `Opaque` or
+`Tuple(scheme~, host~, port~)`. Use `Origin::is_same_origin` to compare two
+origins; an opaque origin is never same origin with anything, including
+itself. `Origin::to_string()` gives the browser serialization, `"null"` for an
+opaque origin.
+
+### Hosts
+
+`Host` has four variants:
+
+- `Domain(String)` for domain names, IDNA/Punycode encoded
+- `IPv4(IPv4)` for IPv4 addresses, accepting decimal, octal and hex notation
+- `IPv6(IPv6)` for IPv6 addresses, with `::` compression and IPv4-mapped forms
+- `Opaque(String)` for hosts of non-special schemes
+
+`Host::parse(input, is_opaque?)` parses a host on its own, and
+`Host::to_unicode()` renders a domain with Unicode labels.
+
+### Search params
+
+`UrlSearchParams` wraps an ordered list of name-value pairs in the
+`application/x-www-form-urlencoded` format:
+
+```moonbit
+let params = @url.UrlSearchParams::parse("a=1&b=two+words")
+params.get("b")             // Some("two words")
+params.append("a", "2")
+params.get_all("a")         // ["1", "2"]
+params.to_string()          // "a=1&b=two+words&a=2"
+url.with_search_params(params)
+```
+
+`UrlSearchParams(pairs)` builds one from an array of pairs without copying it;
+the mutating methods (`append`, `delete`, `set`, `sort`) modify that array in
+place.
+
+### Deprecated JavaScript-style API
+
+The getters `href()`, `protocol()`, `search()`, `hash()` and the mutating
+setters `set_*` mirror the JavaScript `URL` interface: string in, string out,
+rejected values silently ignored. They are kept for compatibility and marked
+deprecated; use the typed getters and `with_*` methods instead.
 
 ## Features
 
 - Full WHATWG URL Standard compliance
-- 3700+ WPT test vectors passing
+- 1250+ WPT test vectors passing (parsing, setters, `URLSearchParams`)
 - Special scheme handling (http, https, ftp, file, ws, wss)
 - Default port normalization
 - Relative URL resolution
-- Percent-encoding/decoding
+- Percent-encoding and decoding
 - IPv4 and IPv6 address parsing
 - IDNA/Punycode domain name support
-- Windows drive letter handling for file URLs
+- Windows drive letter handling for `file:` URLs
 
-## Build
+## Development
 
 ```bash
 moon check      # Type check and lint
-moon build      # Build the project
 moon test       # Run all tests
+moon fmt        # Format
+moon info       # Regenerate pkg.generated.mbti
+```
+
+Regenerate the WPT tests:
+
+```bash
+python3 scripts/generate_wpt_tests.py > wpt_test.mbt
+python3 scripts/generate_wpt_setters_tests.py > wpt_setters_wbtest.mbt
 ```
 
 ## License

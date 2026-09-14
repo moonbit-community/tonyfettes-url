@@ -51,10 +51,75 @@ def setter_method(name):
     return f"set_{name}"
 
 
-def getter_method(name):
-    if name == "href":
-        return "href"
-    return name
+JS_VIEW_GETTERS = {"href", "protocol", "host", "hostname", "port", "pathname", "search", "hash"}
+
+
+def getter_expr(name):
+    """Expression yielding the JavaScript getter view of `url`."""
+    if name in JS_VIEW_GETTERS:
+        return f"js_{name}(url)"
+    return f"url.{name}()"
+
+
+HELPERS = '''///|
+fn js_href(url : Url) -> String {
+  url.to_string()
+}
+
+///|
+fn js_protocol(url : Url) -> String {
+  "\\{url.scheme()}:"
+}
+
+///|
+fn js_hostname(url : Url) -> String {
+  if url.host() is Some(host) {
+    host.to_string()
+  } else {
+    ""
+  }
+}
+
+///|
+fn js_port(url : Url) -> String {
+  if url.port() is Some(port) {
+    port.to_string()
+  } else {
+    ""
+  }
+}
+
+///|
+fn js_host(url : Url) -> String {
+  let hostname = js_hostname(url)
+  if url.port() is Some(port) {
+    "\\{hostname}:\\{port}"
+  } else {
+    hostname
+  }
+}
+
+///|
+fn js_pathname(url : Url) -> String {
+  url.path().to_string()
+}
+
+///|
+fn js_search(url : Url) -> String {
+  match url.query() {
+    Some("") | None => ""
+    Some(query) => "?\\{query}"
+  }
+}
+
+///|
+fn js_hash(url : Url) -> String {
+  match url.fragment() {
+    Some("") | None => ""
+    Some(fragment) => "#\\{fragment}"
+  }
+}
+'''
 
 
 def generate_single_test(setter, index, item):
@@ -65,16 +130,14 @@ def generate_single_test(setter, index, item):
     lines = []
     lines.append("///|")
     lines.append(f'test "WPT setters {setter} #{index}" {{')
-    lines.append(f'  let url = @url.Url::parse("{href}")')
+    lines.append(f'  let url = Url::parse("{href}")')
     lines.append(f'  url.{setter_method(setter)}("{new_value}")')
 
     for field in FIELD_ORDER:
         if field not in expected:
             continue
         expected_value = escape_moonbit_string(expected[field])
-        lines.append(
-            f'  assert_eq(url.{getter_method(field)}(), "{expected_value}")'
-        )
+        lines.append(f'  assert_eq({getter_expr(field)}, "{expected_value}")')
 
     lines.append("}")
     return "\n".join(lines)
@@ -90,8 +153,14 @@ def main():
     output.append("// https://github.com/web-platform-tests/wpt/blob/master/url/resources/setters_tests.json")
     output.append("// Do not edit manually")
     output.append("//")
-    output.append("// To regenerate: python3 scripts/generate_wpt_setters_tests.py > wpt_setters_test.mbt")
+    output.append("// To regenerate: python3 scripts/generate_wpt_setters_tests.py > wpt_setters_wbtest.mbt")
+    output.append("//")
+    output.append("// These tests exercise the deprecated JavaScript-style setters, so they live")
+    output.append("// in a white-box file where intra-package deprecation warnings are skipped.")
+    output.append("// The expected values are the JavaScript getter views, computed here from the")
+    output.append("// typed getters.")
     output.append("")
+    output.append(HELPERS)
 
     for setter in FIELD_ORDER:
         if setter not in data:

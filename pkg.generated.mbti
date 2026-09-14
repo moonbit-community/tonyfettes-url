@@ -3,18 +3,49 @@ package "tonyfettes/url"
 
 import {
   "moonbitlang/core/debug",
+  "tonyfettes/unicode/idna",
 }
 
 // Values
 
 // Errors
-type ValidationError derive(ToJson, @debug.Debug)
-pub impl Show for ValidationError
+pub suberror UpdateError {
+  InvalidScheme
+  SpecialSchemeMismatch
+  HostRequired
+  HostKindMismatch
+  HasOpaquePath
+  CannotHaveCredentialsOrPort
+  InvalidPath
+} derive(Eq, @debug.Debug)
 
-pub suberror ValidationErrors {
-  ValidationErrors(Array[ValidationError])
-} derive(@debug.Debug)
-pub impl Show for ValidationErrors
+pub suberror ValidationError {
+  DomainToAscii
+  HostInvalidCodePoint
+  IPv4EmptyPart
+  IPv4TooManyParts
+  IPv4NonNumericPart
+  IPv4OutOfRangePart
+  IPv6InvalidCompression
+  IPv6MultipleCompression
+  IPv6TooManyPieces
+  IPv6InvalidCodePoint
+  IPv6TooFewPieces
+  IPv6Unclosed
+  IPv4InIPv6InvalidCodePoint
+  IPv4InIPv6TooManyPieces
+  IPv4InIPv6OutOfRangePart
+  IPv4InIPv6TooFewParts
+  MissingSchemeNonRelativeUrl
+  SpecialSchemeMissingFollowingSolidus
+  InvalidReverseSolidus
+  InvalidCredentials
+  HostMissing
+  PortOutOfRange
+  PortInvalid
+  InvalidScheme
+} derive(ToJson, @debug.Debug)
+pub impl Show for ValidationError
 
 // Types and methods
 pub enum Host {
@@ -22,85 +53,106 @@ pub enum Host {
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-} derive(ToJson, @debug.Debug)
+} derive(Eq, @debug.Debug)
 pub fn Host::parse(StringView, is_opaque? : Bool) -> Self raise ValidationError
 pub fn Host::to_string(Self) -> String
-pub fn Host::to_unicode(Self) -> String
+pub fn Host::to_unicode(Self) -> String raise @idna.IdnaError
 pub impl Show for Host
+pub impl ToJson for Host
 
-type IPv4 derive(@debug.Debug)
+type IPv4 derive(Eq, @debug.Debug)
 pub fn IPv4::parse(StringView) -> Self raise ValidationError
 pub fn IPv4::to_string(Self) -> String
 pub impl Show for IPv4
 pub impl ToJson for IPv4
 
-type IPv6 derive(@debug.Debug)
+type IPv6 derive(Eq, @debug.Debug)
 pub fn IPv6::parse(StringView) -> Self raise ValidationError
 pub fn IPv6::to_string(Self) -> String
 pub impl Show for IPv6
 pub impl ToJson for IPv6
 
+pub enum Origin {
+  Opaque
+  Tuple(scheme~ : String, host~ : Host, port~ : UInt16?)
+}
+pub fn Origin::is_same_origin(Self, Self) -> Bool
+pub fn Origin::to_string(Self) -> String
+pub impl Show for Origin
+
 type Path
 pub fn Path::to_string(Self) -> String
 pub impl Show for Path
 
-pub struct Url {
-  mut scheme : String
-  mut username : String
-  mut password : String
-  mut host : Host?
-  mut port : UInt16?
-  mut path : Path
-  mut query : String?
-  mut fragment : String?
-}
+type Url
+pub fn Url::fragment(Self) -> String?
+#deprecated
 pub fn Url::hash(Self) -> String
-pub fn Url::host(Self) -> String
-pub fn Url::hostname(Self) -> String
+pub fn Url::host(Self) -> Host?
+#deprecated
 pub fn Url::href(Self) -> String
-pub fn Url::origin(Self) -> String
+pub fn Url::origin(Self) -> Origin
 #as_free_fn
-pub fn Url::parse(StringView, base? : Self) -> Self raise ValidationErrors
+pub fn Url::parse(StringView, base? : Self, validation_errors? : Array[ValidationError]) -> Self raise ValidationError
 pub fn Url::password(Self) -> String
-pub fn Url::pathname(Self) -> String
-pub fn Url::port(Self) -> String
+pub fn Url::path(Self) -> Path
+pub fn Url::port(Self) -> UInt16?
+#deprecated
 pub fn Url::protocol(Self) -> String
+pub fn Url::query(Self) -> String?
+pub fn Url::scheme(Self) -> String
+#deprecated
 pub fn Url::search(Self) -> String
 pub fn Url::search_params(Self) -> UrlSearchParams
+#deprecated
 pub fn Url::set_hash(Self, String) -> Unit
+#deprecated
 pub fn Url::set_host(Self, String) -> Unit
+#deprecated
 pub fn Url::set_hostname(Self, String) -> Unit
-pub fn Url::set_href(Self, String) -> Unit raise ValidationErrors
+#deprecated
+pub fn Url::set_href(Self, String) -> Unit raise ValidationError
+#deprecated
 pub fn Url::set_password(Self, String) -> Unit
+#deprecated
 pub fn Url::set_pathname(Self, String) -> Unit
+#deprecated
 pub fn Url::set_port(Self, String) -> Unit
+#deprecated
 pub fn Url::set_protocol(Self, String) -> Unit
+#deprecated
 pub fn Url::set_search(Self, String) -> Unit
+#deprecated
 pub fn Url::set_search_params(Self, UrlSearchParams) -> Unit
+#deprecated
 pub fn Url::set_username(Self, String) -> Unit
 pub fn Url::to_string(Self) -> String
-#as_free_fn
-pub fn Url::try_parse(StringView, base? : Self, validation_errors? : Array[ValidationError]) -> Self?
 pub fn Url::username(Self) -> String
+pub fn Url::with_fragment(Self, String?) -> Self
+pub fn Url::with_host(Self, Host?) -> Self raise UpdateError
+pub fn Url::with_password(Self, String) -> Self raise UpdateError
+pub fn Url::with_path(Self, Path) -> Self raise UpdateError
+pub fn Url::with_port(Self, UInt16?) -> Self raise UpdateError
+pub fn Url::with_query(Self, String?) -> Self
+pub fn Url::with_scheme(Self, String) -> Self raise UpdateError
+pub fn Url::with_search_params(Self, UrlSearchParams) -> Self
+pub fn Url::with_username(Self, String) -> Self raise UpdateError
 pub impl Show for Url
 pub impl ToJson for Url
 
-pub struct UrlSearchParams {
-  mut list : Array[(String, String)]
-}
+pub(all) struct UrlSearchParams(Array[(String, String)])
 pub fn UrlSearchParams::append(Self, String, String) -> Unit
 pub fn UrlSearchParams::delete(Self, String, value? : String) -> Unit
-pub fn UrlSearchParams::entries(Self) -> Iter[(String, String)]
-pub fn UrlSearchParams::from_pairs(Array[(String, String)]) -> Self
-pub fn UrlSearchParams::from_string(String) -> Self
 pub fn UrlSearchParams::get(Self, String) -> String?
 pub fn UrlSearchParams::get_all(Self, String) -> Array[String]
 pub fn UrlSearchParams::has(Self, String, value? : String) -> Bool
+#alias(entries, deprecated)
 pub fn UrlSearchParams::iter(Self) -> Iter[(String, String)]
 pub fn UrlSearchParams::keys(Self) -> Iter[String]
-pub fn UrlSearchParams::new() -> Self
+#alias(size, deprecated)
+pub fn UrlSearchParams::length(Self) -> Int
+pub fn UrlSearchParams::parse(StringView) -> Self
 pub fn UrlSearchParams::set(Self, String, String) -> Unit
-pub fn UrlSearchParams::size(Self) -> Int
 pub fn UrlSearchParams::sort(Self) -> Unit
 pub fn UrlSearchParams::to_string(Self) -> String
 pub fn UrlSearchParams::values(Self) -> Iter[String]
