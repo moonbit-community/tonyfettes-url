@@ -6,7 +6,7 @@ let hex_chars : FixedArray[Char] = [
 
 ///|
 /// Represents an IPv6 address as 8 16-bit pieces
-struct IPv6(FixedArray[UInt16]) derive(Debug)
+struct IPv6(FixedArray[UInt16]) derive(Debug, Eq)
 
 ///|
 /// Serialize IPv6 address per WHATWG URL spec
@@ -84,7 +84,7 @@ pub impl Show for IPv6 with fn output(self : IPv6, logger : &Logger) -> Unit {
 ///|
 /// Implement ToJson trait for IPv6, outputting as array of 8 16-bit values
 pub impl ToJson for IPv6 with fn to_json(self : IPv6) -> Json {
-  self.0.to_json()
+  self.to_string().to_json()
 }
 
 ///|

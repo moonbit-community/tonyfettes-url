@@ -7,7 +7,13 @@ pub enum Host {
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-} derive(ToJson, Debug)
+} derive(Debug, Eq)
+
+///|
+/// Serialize to JSON as the host's string form, matching `Url`.
+pub impl ToJson for Host with fn to_json(self : Host) -> Json {
+  self.to_string().to_json()
+}
 
 ///|
 /// Serialize host per WHATWG URL spec
@@ -28,12 +34,9 @@ pub impl Show for Host with fn output(self : Host, logger : &Logger) -> Unit {
 
 ///|
 /// Convert host to Unicode form for display (Punycode → Unicode)
-pub fn Host::to_unicode(self : Host) -> String {
+pub fn Host::to_unicode(self : Host) -> String raise @idna.IdnaError {
   match self {
-    Domain(domain) =>
-      @idna.to_unicode(domain) catch {
-        _ => domain // If IDNA conversion fails, return as-is
-      }
+    Domain(domain) => @idna.to_unicode(domain)
     IPv4(ipv4) => ipv4.to_string()
     IPv6(ipv6) => "[\{ipv6.to_string()}]"
     Opaque(s) => s
@@ -41,9 +44,14 @@ pub fn Host::to_unicode(self : Host) -> String {
 }
 
 ///|
-/// URL parsing validation errors per the WHATWG URL Standard.
-/// Each variant represents a specific parsing failure condition.
-suberror ValidationError {
+/// Validation errors per the WHATWG URL Standard.
+/// See: https://url.spec.whatwg.org/#validation-error
+///
+/// A validation error either makes the parser return failure (`Url::parse`
+/// raises it) or is a non-fatal warning the parser reports and moves past
+/// (`Url::parse` collects it into `validation_errors`). The spec's table of
+/// validation errors says which is which.
+pub suberror ValidationError {
   DomainToAscii
   HostInvalidCodePoint
   IPv4EmptyPart
@@ -65,6 +73,12 @@ suberror ValidationError {
   InvalidReverseSolidus
   InvalidCredentials
   HostMissing
+  PortOutOfRange
+  PortInvalid
+  /// A scheme given to a setter is not `alpha *( alphanumeric / "+" / "-" / "." )`.
+  /// The spec returns failure here without naming an error; only the
+  /// deprecated JavaScript-style setters can reach it.
+  InvalidScheme
 } derive(ToJson, Debug)
 
 ///|
@@ -92,6 +106,9 @@ pub impl Show for ValidationError with fn output(self, logger) {
     InvalidReverseSolidus => "InvalidReverseSolidus"
     InvalidCredentials => "InvalidCredentials"
     HostMissing => "HostMissing"
+    PortOutOfRange => "PortOutOfRange"
+    PortInvalid => "PortInvalid"
+    InvalidScheme => "InvalidScheme"
   }
   logger.write_string(message)
 }

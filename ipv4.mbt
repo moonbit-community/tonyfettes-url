@@ -1,7 +1,7 @@
 ///|
 /// Represents an IPv4 address as a 32-bit unsigned integer.
 /// See: https://url.spec.whatwg.org/#concept-ipv4
-struct IPv4(UInt) derive(Debug)
+struct IPv4(UInt) derive(Debug, Eq)
 
 ///|
 /// Serialize IPv4 address to dotted-decimal notation (e.g., "192.168.1.1").
@@ -24,11 +24,7 @@ pub impl Show for IPv4 with fn output(self : IPv4, logger : &Logger) -> Unit {
 ///|
 /// Implement ToJson trait for IPv4, outputting as array of 4 bytes
 pub impl ToJson for IPv4 with fn to_json(self : IPv4) -> Json {
-  let b0 = ((self.0 >> 24) & 0xFF).to_byte()
-  let b1 = ((self.0 >> 16) & 0xFF).to_byte()
-  let b2 = ((self.0 >> 8) & 0xFF).to_byte()
-  let b3 = (self.0 & 0xFF).to_byte()
-  [b0, b1, b2, b3].to_json()
+  self.to_string().to_json()
 }
 
 ///|

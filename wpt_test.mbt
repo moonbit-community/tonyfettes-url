@@ -117,18 +117,20 @@ test "WPT #15" {
 ///|
 test "WPT #16" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://f:b/c", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://f:b/c", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #17" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://f: /c", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://f: /c", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -142,36 +144,40 @@ test "WPT #18" {
 ///|
 test "WPT #19" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://f:fifty-two/c", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://f:fifty-two/c", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #20" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://f:999999/c", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://f:999999/c", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #21" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("non-special://f:999999/c", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("non-special://f:999999/c", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #22" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://f: 21 / b ? d # e ", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://f: 21 / b ? d # e ", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -484,36 +490,40 @@ test "WPT #66" {
 ///|
 test "WPT #67" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://[1::2]:3:4", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[1::2]:3:4", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #68" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://2001::1", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://2001::1", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #69" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://2001::1]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://2001::1]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #70" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://2001::1]:80", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://2001::1]:80", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -534,9 +544,10 @@ test "WPT #72" {
 ///|
 test "WPT #73" {
   let base_url = @url.Url::parse("http://example.org/foo/bar")
-  let result = @url.Url::try_parse("http://[::127.0.0.1.]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::127.0.0.1.]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -591,33 +602,37 @@ test "WPT #80" {
 
 ///|
 test "WPT #81" {
-  let result = @url.Url::try_parse("file://example:1/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://example:1/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #82" {
-  let result = @url.Url::try_parse("file://example:test/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://example:test/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #83" {
-  let result = @url.Url::try_parse("file://example%/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://example%/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #84" {
-  let result = @url.Url::try_parse("file://[example]/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://[example]/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -1229,9 +1244,10 @@ test "WPT #177" {
 
 ///|
 test "WPT #178" {
-  let result = @url.Url::try_parse("http://user:pass@/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://user:pass@/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -1267,9 +1283,10 @@ test "WPT #183" {
 
 ///|
 test "WPT #184" {
-  let result = @url.Url::try_parse("http://foo:-80/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo:-80/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -1563,81 +1580,91 @@ test "WPT #232" {
 
 ///|
 test "WPT #233" {
-  let result = @url.Url::try_parse("http:/:@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:/:@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #234" {
-  let result = @url.Url::try_parse("http://user@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://user@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #235" {
-  let result = @url.Url::try_parse("http:@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #236" {
-  let result = @url.Url::try_parse("http:/@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:/@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #237" {
-  let result = @url.Url::try_parse("http://@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #238" {
-  let result = @url.Url::try_parse("https:@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https:@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #239" {
-  let result = @url.Url::try_parse("http:a:b@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:a:b@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #240" {
-  let result = @url.Url::try_parse("http:/a:b@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:/a:b@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #241" {
-  let result = @url.Url::try_parse("http://a:b@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a:b@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #242" {
-  let result = @url.Url::try_parse("http::@/www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http::@/www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -1667,25 +1694,28 @@ test "WPT #246" {
 
 ///|
 test "WPT #247" {
-  let result = @url.Url::try_parse("http:@:www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:@:www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #248" {
-  let result = @url.Url::try_parse("http:/@:www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:/@:www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #249" {
-  let result = @url.Url::try_parse("http://@:www.example.com")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://@:www.example.com") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -1823,45 +1853,50 @@ test "WPT #268" {
 ///|
 test "WPT #269" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://example example.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://example example.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #270" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://Goo%20 goo%7C|.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://Goo%20 goo%7C|.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #271" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #272" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[:]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[:]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #273" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://GOO 　goo.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://GOO 　goo.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -1938,34 +1973,38 @@ test "WPT #284" {
 ///|
 test "WPT #285" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://﷐zyx.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://﷐zyx.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #286" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://%ef%b7%90zyx.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://%ef%b7%90zyx.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #287" {
-  let result = @url.Url::try_parse("https://�")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://�") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #288" {
-  let result = @url.Url::try_parse("https://%EF%BF%BD")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://%EF%BF%BD") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -1977,49 +2016,55 @@ test "WPT #289" {
 
 ///|
 test "WPT #290" {
-  let result = @url.Url::try_parse("http://a.b.c.xn--pokxncvks")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a.b.c.xn--pokxncvks") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #291" {
-  let result = @url.Url::try_parse("http://10.0.0.xn--pokxncvks")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://10.0.0.xn--pokxncvks") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #292" {
-  let result = @url.Url::try_parse("http://a.b.c.XN--pokxncvks")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a.b.c.XN--pokxncvks") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #293" {
-  let result = @url.Url::try_parse("http://a.b.c.Xn--pokxncvks")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a.b.c.Xn--pokxncvks") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #294" {
-  let result = @url.Url::try_parse("http://10.0.0.XN--pokxncvks")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://10.0.0.XN--pokxncvks") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #295" {
-  let result = @url.Url::try_parse("http://10.0.0.xN--pokxncvks")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://10.0.0.xN--pokxncvks") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2033,42 +2078,44 @@ test "WPT #296" {
 ///|
 test "WPT #297" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://％４１.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://％４１.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #298" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse(
-    "http://%ef%bc%85%ef%bc%94%ef%bc%91.com",
-    base=base_url,
-  )
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try
+    @url.Url::parse("http://%ef%bc%85%ef%bc%94%ef%bc%91.com", base=base_url)
+  catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #299" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://％００.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://％００.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #300" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse(
-    "http://%ef%bc%85%ef%bc%90%ef%bc%90.com",
-    base=base_url,
-  )
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try
+    @url.Url::parse("http://%ef%bc%85%ef%bc%90%ef%bc%90.com", base=base_url)
+  catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2094,27 +2141,30 @@ test "WPT #303" {
 ///|
 test "WPT #304" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://%zz%66%a.com", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://%zz%66%a.com", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #305" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://%25", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://%25", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #306" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://hello%00", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://hello%00", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2141,38 +2191,41 @@ test "WPT #308" {
 ///|
 test "WPT #309" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://192.168.0.257", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://192.168.0.257", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #310" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse(
-    "http://%3g%78%63%30%2e%30%32%35%30%2E.01",
-    base=base_url,
-  )
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try
+    @url.Url::parse("http://%3g%78%63%30%2e%30%32%35%30%2E.01", base=base_url)
+  catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #311" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://192.168.0.1 hello", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://192.168.0.1 hello", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #312" {
-  let result = @url.Url::try_parse("https://x x:12")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://x x:12") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2206,90 +2259,100 @@ test "WPT #316" {
 
 ///|
 test "WPT #317" {
-  let result = @url.Url::try_parse("http://[www.google.com]/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[www.google.com]/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #318" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[google.com]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[google.com]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #319" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[::1.2.3.4x]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::1.2.3.4x]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #320" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[::1.2.3.]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::1.2.3.]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #321" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[::1.2.]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::1.2.]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #322" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[::.1.2]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::.1.2]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #323" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[::1.]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::1.]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #324" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[::.1]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::.1]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #325" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://[::%31]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::%31]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #326" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://%5B::1]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://%5B::1]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2399,18 +2462,20 @@ test "WPT #341" {
 ///|
 test "WPT #342" {
   let base_url = @url.Url::parse("sc:sd")
-  let result = @url.Url::try_parse("i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #343" {
   let base_url = @url.Url::parse("sc:sd/sd")
-  let result = @url.Url::try_parse("i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2438,18 +2503,20 @@ test "WPT #346" {
 ///|
 test "WPT #347" {
   let base_url = @url.Url::parse("sc:sd")
-  let result = @url.Url::try_parse("../i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("../i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #348" {
   let base_url = @url.Url::parse("sc:sd/sd")
-  let result = @url.Url::try_parse("../i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("../i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2477,18 +2544,20 @@ test "WPT #351" {
 ///|
 test "WPT #352" {
   let base_url = @url.Url::parse("sc:sd")
-  let result = @url.Url::try_parse("/i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("/i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #353" {
   let base_url = @url.Url::parse("sc:sd/sd")
-  let result = @url.Url::try_parse("/i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("/i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2516,18 +2585,20 @@ test "WPT #356" {
 ///|
 test "WPT #357" {
   let base_url = @url.Url::parse("sc:sd")
-  let result = @url.Url::try_parse("?i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("?i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #358" {
   let base_url = @url.Url::parse("sc:sd/sd")
-  let result = @url.Url::try_parse("?i", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("?i", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2625,33 +2696,37 @@ test "WPT #372" {
 
 ///|
 test "WPT #373" {
-  let result = @url.Url::try_parse("sc://@/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://@/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #374" {
-  let result = @url.Url::try_parse("sc://te@s:t@/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://te@s:t@/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #375" {
-  let result = @url.Url::try_parse("sc://:/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://:/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #376" {
-  let result = @url.Url::try_parse("sc://:12/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://:12/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2694,73 +2769,82 @@ test "WPT #382" {
 
 ///|
 test "WPT #383" {
-  let result = @url.Url::try_parse("sc://a\u{0000}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a\u{0000}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #384" {
-  let result = @url.Url::try_parse("sc://a b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #385" {
-  let result = @url.Url::try_parse("sc://a<b")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a<b") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #386" {
-  let result = @url.Url::try_parse("sc://a>b")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a>b") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #387" {
-  let result = @url.Url::try_parse("sc://a[b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a[b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #388" {
-  let result = @url.Url::try_parse("sc://a\\b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a\\b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #389" {
-  let result = @url.Url::try_parse("sc://a]b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a]b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #390" {
-  let result = @url.Url::try_parse("sc://a^b")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a^b") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #391" {
-  let result = @url.Url::try_parse("sc://a|b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("sc://a|b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -2784,305 +2868,343 @@ test "WPT #394" {
 
 ///|
 test "WPT #395" {
-  let result = @url.Url::try_parse("http://a\u{0000}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0000}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #396" {
-  let result = @url.Url::try_parse("http://a\u{0001}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0001}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #397" {
-  let result = @url.Url::try_parse("http://a\u{0002}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0002}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #398" {
-  let result = @url.Url::try_parse("http://a\u{0003}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0003}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #399" {
-  let result = @url.Url::try_parse("http://a\u{0004}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0004}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #400" {
-  let result = @url.Url::try_parse("http://a\u{0005}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0005}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #401" {
-  let result = @url.Url::try_parse("http://a\u{0006}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0006}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #402" {
-  let result = @url.Url::try_parse("http://a\u{0007}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0007}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #403" {
-  let result = @url.Url::try_parse("http://a\u{0008}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0008}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #404" {
-  let result = @url.Url::try_parse("http://a\u{000B}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{000B}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #405" {
-  let result = @url.Url::try_parse("http://a\u{000C}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{000C}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #406" {
-  let result = @url.Url::try_parse("http://a\u{000E}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{000E}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #407" {
-  let result = @url.Url::try_parse("http://a\u{000F}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{000F}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #408" {
-  let result = @url.Url::try_parse("http://a\u{0010}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0010}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #409" {
-  let result = @url.Url::try_parse("http://a\u{0011}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0011}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #410" {
-  let result = @url.Url::try_parse("http://a\u{0012}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0012}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #411" {
-  let result = @url.Url::try_parse("http://a\u{0013}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0013}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #412" {
-  let result = @url.Url::try_parse("http://a\u{0014}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0014}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #413" {
-  let result = @url.Url::try_parse("http://a\u{0015}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0015}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #414" {
-  let result = @url.Url::try_parse("http://a\u{0016}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0016}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #415" {
-  let result = @url.Url::try_parse("http://a\u{0017}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0017}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #416" {
-  let result = @url.Url::try_parse("http://a\u{0018}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0018}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #417" {
-  let result = @url.Url::try_parse("http://a\u{0019}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{0019}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #418" {
-  let result = @url.Url::try_parse("http://a\u{001A}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{001A}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #419" {
-  let result = @url.Url::try_parse("http://a\u{001B}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{001B}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #420" {
-  let result = @url.Url::try_parse("http://a\u{001C}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{001C}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #421" {
-  let result = @url.Url::try_parse("http://a\u{001D}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{001D}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #422" {
-  let result = @url.Url::try_parse("http://a\u{001E}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{001E}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #423" {
-  let result = @url.Url::try_parse("http://a\u{001F}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{001F}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #424" {
-  let result = @url.Url::try_parse("http://a b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #425" {
-  let result = @url.Url::try_parse("http://a%b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a%b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #426" {
-  let result = @url.Url::try_parse("http://a<b")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a<b") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #427" {
-  let result = @url.Url::try_parse("http://a>b")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a>b") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #428" {
-  let result = @url.Url::try_parse("http://a[b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a[b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #429" {
-  let result = @url.Url::try_parse("http://a]b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a]b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #430" {
-  let result = @url.Url::try_parse("http://a^b")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a^b") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #431" {
-  let result = @url.Url::try_parse("http://a|b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a|b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #432" {
-  let result = @url.Url::try_parse("http://a\u{007F}b/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://a\u{007F}b/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3106,369 +3228,415 @@ test "WPT #435" {
 
 ///|
 test "WPT #436" {
-  let result = @url.Url::try_parse("http://ho%00st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%00st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #437" {
-  let result = @url.Url::try_parse("http://ho%01st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%01st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #438" {
-  let result = @url.Url::try_parse("http://ho%02st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%02st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #439" {
-  let result = @url.Url::try_parse("http://ho%03st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%03st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #440" {
-  let result = @url.Url::try_parse("http://ho%04st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%04st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #441" {
-  let result = @url.Url::try_parse("http://ho%05st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%05st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #442" {
-  let result = @url.Url::try_parse("http://ho%06st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%06st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #443" {
-  let result = @url.Url::try_parse("http://ho%07st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%07st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #444" {
-  let result = @url.Url::try_parse("http://ho%08st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%08st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #445" {
-  let result = @url.Url::try_parse("http://ho%09st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%09st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #446" {
-  let result = @url.Url::try_parse("http://ho%0Ast/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%0Ast/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #447" {
-  let result = @url.Url::try_parse("http://ho%0Bst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%0Bst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #448" {
-  let result = @url.Url::try_parse("http://ho%0Cst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%0Cst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #449" {
-  let result = @url.Url::try_parse("http://ho%0Dst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%0Dst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #450" {
-  let result = @url.Url::try_parse("http://ho%0Est/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%0Est/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #451" {
-  let result = @url.Url::try_parse("http://ho%0Fst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%0Fst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #452" {
-  let result = @url.Url::try_parse("http://ho%10st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%10st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #453" {
-  let result = @url.Url::try_parse("http://ho%11st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%11st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #454" {
-  let result = @url.Url::try_parse("http://ho%12st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%12st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #455" {
-  let result = @url.Url::try_parse("http://ho%13st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%13st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #456" {
-  let result = @url.Url::try_parse("http://ho%14st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%14st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #457" {
-  let result = @url.Url::try_parse("http://ho%15st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%15st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #458" {
-  let result = @url.Url::try_parse("http://ho%16st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%16st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #459" {
-  let result = @url.Url::try_parse("http://ho%17st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%17st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #460" {
-  let result = @url.Url::try_parse("http://ho%18st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%18st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #461" {
-  let result = @url.Url::try_parse("http://ho%19st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%19st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #462" {
-  let result = @url.Url::try_parse("http://ho%1Ast/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%1Ast/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #463" {
-  let result = @url.Url::try_parse("http://ho%1Bst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%1Bst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #464" {
-  let result = @url.Url::try_parse("http://ho%1Cst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%1Cst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #465" {
-  let result = @url.Url::try_parse("http://ho%1Dst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%1Dst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #466" {
-  let result = @url.Url::try_parse("http://ho%1Est/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%1Est/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #467" {
-  let result = @url.Url::try_parse("http://ho%1Fst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%1Fst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #468" {
-  let result = @url.Url::try_parse("http://ho%20st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%20st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #469" {
-  let result = @url.Url::try_parse("http://ho%23st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%23st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #470" {
-  let result = @url.Url::try_parse("http://ho%25st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%25st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #471" {
-  let result = @url.Url::try_parse("http://ho%2Fst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%2Fst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #472" {
-  let result = @url.Url::try_parse("http://ho%3Ast/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%3Ast/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #473" {
-  let result = @url.Url::try_parse("http://ho%3Cst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%3Cst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #474" {
-  let result = @url.Url::try_parse("http://ho%3Est/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%3Est/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #475" {
-  let result = @url.Url::try_parse("http://ho%3Fst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%3Fst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #476" {
-  let result = @url.Url::try_parse("http://ho%40st/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%40st/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #477" {
-  let result = @url.Url::try_parse("http://ho%5Bst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%5Bst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #478" {
-  let result = @url.Url::try_parse("http://ho%5Cst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%5Cst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #479" {
-  let result = @url.Url::try_parse("http://ho%5Dst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%5Dst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #480" {
-  let result = @url.Url::try_parse("http://ho%7Cst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%7Cst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #481" {
-  let result = @url.Url::try_parse("http://ho%7Fst/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://ho%7Fst/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3491,33 +3659,37 @@ test "WPT #483" {
 
 ///|
 test "WPT #484" {
-  let result = @url.Url::try_parse("ftp://example.com%80/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("ftp://example.com%80/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #485" {
-  let result = @url.Url::try_parse("ftp://example.com%A0/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("ftp://example.com%A0/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #486" {
-  let result = @url.Url::try_parse("https://example.com%80/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://example.com%80/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #487" {
-  let result = @url.Url::try_parse("https://example.com%A0/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://example.com%A0/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3583,9 +3755,10 @@ test "WPT #496" {
 ///|
 test "WPT #497" {
   let base_url = @url.Url::parse("https://example.org/foo/bar")
-  let result = @url.Url::try_parse("http:", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http:", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3699,9 +3872,10 @@ test "WPT #513" {
 ///|
 test "WPT #514" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://10000000000", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://10000000000", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3722,9 +3896,10 @@ test "WPT #516" {
 ///|
 test "WPT #517" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://4294967296", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://4294967296", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3738,18 +3913,20 @@ test "WPT #518" {
 ///|
 test "WPT #519" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://0xffffffff1", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0xffffffff1", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #520" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://256.256.256.256", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://256.256.256.256", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3773,17 +3950,19 @@ test "WPT #523" {
 
 ///|
 test "WPT #524" {
-  let result = @url.Url::try_parse("https://0x100000000/test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://0x100000000/test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #525" {
-  let result = @url.Url::try_parse("https://256.0.0.1/test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://256.0.0.1/test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -3801,57 +3980,64 @@ test "WPT #527" {
 
 ///|
 test "WPT #528" {
-  let result = @url.Url::try_parse("file://%43%3A")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://%43%3A") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #529" {
-  let result = @url.Url::try_parse("file://%43%7C")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://%43%7C") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #530" {
-  let result = @url.Url::try_parse("file://%43|")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://%43|") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #531" {
-  let result = @url.Url::try_parse("file://C%7C")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://C%7C") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #532" {
-  let result = @url.Url::try_parse("file://%43%7C/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://%43%7C/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #533" {
-  let result = @url.Url::try_parse("https://%43%7C/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://%43%7C/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #534" {
-  let result = @url.Url::try_parse("asdf://%43|/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("asdf://%43|/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -4323,9 +4509,10 @@ test "WPT #603" {
 
 ///|
 test "WPT #604" {
-  let result = @url.Url::try_parse("\\\\\\.\\Y:")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("\\\\\\.\\Y:") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -4355,9 +4542,10 @@ test "WPT #608" {
 
 ///|
 test "WPT #609" {
-  let result = @url.Url::try_parse("\\\\\\.\\y:")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("\\\\\\.\\y:") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -4443,114 +4631,126 @@ test "WPT #621" {
 ///|
 test "WPT #622" {
   let base_url = @url.Url::parse("http://example.net/")
-  let result = @url.Url::try_parse("http://[0:1:2:3:4:5:6:7:8]", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[0:1:2:3:4:5:6:7:8]", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #623" {
-  let result = @url.Url::try_parse("https://[0::0::0]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://[0::0::0]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #624" {
-  let result = @url.Url::try_parse("https://[0:.0]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://[0:.0]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #625" {
-  let result = @url.Url::try_parse("https://[0:0:]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://[0:0:]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #626" {
-  let result = @url.Url::try_parse("https://[0:1:2:3:4:5:6:7.0.0.0.1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://[0:1:2:3:4:5:6:7.0.0.0.1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #627" {
-  let result = @url.Url::try_parse("https://[0:1.00.0.0.0]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://[0:1.00.0.0.0]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #628" {
-  let result = @url.Url::try_parse("https://[0:1.290.0.0.0]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://[0:1.290.0.0.0]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #629" {
-  let result = @url.Url::try_parse("https://[0:1.23.23]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://[0:1.23.23]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #630" {
-  let result = @url.Url::try_parse("http://?")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://?") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #631" {
-  let result = @url.Url::try_parse("http://#")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://#") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #632" {
   let base_url = @url.Url::parse("http://example.org/")
-  let result = @url.Url::try_parse("http://f:4294967377/c", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://f:4294967377/c", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #633" {
   let base_url = @url.Url::parse("http://example.org/")
-  let result = @url.Url::try_parse(
-    "http://f:18446744073709551697/c",
-    base=base_url,
-  )
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://f:18446744073709551697/c", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #634" {
   let base_url = @url.Url::parse("http://example.org/")
-  let result = @url.Url::try_parse(
-    "http://f:340282366920938463463374607431768211537/c",
-    base=base_url,
-  )
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try
+    @url.Url::parse(
+      "http://f:340282366920938463463374607431768211537/c",
+      base=base_url,
+    )
+  catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -4808,9 +5008,10 @@ test "WPT #674" {
 
 ///|
 test "WPT #675" {
-  let result = @url.Url::try_parse("non-special://[:80/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("non-special://[:80/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -4900,9 +5101,10 @@ test "WPT #689" {
 
 ///|
 test "WPT #690" {
-  let result = @url.Url::try_parse("http://[::127.0.0.0.1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://[::127.0.0.0.1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -4974,43 +5176,48 @@ test "WPT #701" {
 
 ///|
 test "WPT #702" {
-  let result = @url.Url::try_parse("a")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("a") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #703" {
-  let result = @url.Url::try_parse("a/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("a/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #704" {
-  let result = @url.Url::try_parse("a//")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("a//") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #705" {
   let base_url = @url.Url::parse("a:")
-  let result = @url.Url::try_parse("test-a-colon.html", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("test-a-colon.html", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #706" {
   let base_url = @url.Url::parse("a:b")
-  let result = @url.Url::try_parse("test-a-colon-b.html", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("test-a-colon-b.html", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5101,25 +5308,28 @@ test "WPT #719" {
 
 ///|
 test "WPT #720" {
-  let result = @url.Url::try_parse("file://­/p")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://­/p") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #721" {
-  let result = @url.Url::try_parse("file://%C2%AD/p")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://%C2%AD/p") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #722" {
-  let result = @url.Url::try_parse("file://xn--/p")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("file://xn--/p") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5310,221 +5520,248 @@ test "WPT #743" {
 
 ///|
 test "WPT #744" {
-  let result = @url.Url::try_parse("#")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("#") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #745" {
-  let result = @url.Url::try_parse("?")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("?") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #746" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://1.2.3.4.5", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://1.2.3.4.5", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #747" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://1.2.3.4.5.", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://1.2.3.4.5.", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #748" {
-  let result = @url.Url::try_parse("http://0..0x300/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0..0x300/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #749" {
-  let result = @url.Url::try_parse("http://0..0x300./")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0..0x300./") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #750" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://256.256.256.256.256", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://256.256.256.256.256", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #751" {
   let base_url = @url.Url::parse("http://other.com/")
-  let result = @url.Url::try_parse("http://256.256.256.256.256.", base=base_url)
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://256.256.256.256.256.", base=base_url) catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #752" {
-  let result = @url.Url::try_parse("http://1.2.3.08")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://1.2.3.08") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #753" {
-  let result = @url.Url::try_parse("http://1.2.3.08.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://1.2.3.08.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #754" {
-  let result = @url.Url::try_parse("http://1.2.3.09")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://1.2.3.09") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #755" {
-  let result = @url.Url::try_parse("http://09.2.3.4")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://09.2.3.4") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #756" {
-  let result = @url.Url::try_parse("http://09.2.3.4.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://09.2.3.4.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #757" {
-  let result = @url.Url::try_parse("http://01.2.3.4.5")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://01.2.3.4.5") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #758" {
-  let result = @url.Url::try_parse("http://01.2.3.4.5.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://01.2.3.4.5.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #759" {
-  let result = @url.Url::try_parse("http://0x100.2.3.4")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0x100.2.3.4") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #760" {
-  let result = @url.Url::try_parse("http://0x100.2.3.4.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0x100.2.3.4.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #761" {
-  let result = @url.Url::try_parse("http://0x1.2.3.4.5")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0x1.2.3.4.5") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #762" {
-  let result = @url.Url::try_parse("http://0x1.2.3.4.5.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0x1.2.3.4.5.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #763" {
-  let result = @url.Url::try_parse("http://foo.1.2.3.4")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.1.2.3.4") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #764" {
-  let result = @url.Url::try_parse("http://foo.1.2.3.4.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.1.2.3.4.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #765" {
-  let result = @url.Url::try_parse("http://foo.2.3.4")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.2.3.4") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #766" {
-  let result = @url.Url::try_parse("http://foo.2.3.4.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.2.3.4.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #767" {
-  let result = @url.Url::try_parse("http://foo.09")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.09") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #768" {
-  let result = @url.Url::try_parse("http://foo.09.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.09.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #769" {
-  let result = @url.Url::try_parse("http://foo.0x4")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.0x4") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #770" {
-  let result = @url.Url::try_parse("http://foo.0x4.")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.0x4.") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5536,41 +5773,46 @@ test "WPT #771" {
 
 ///|
 test "WPT #772" {
-  let result = @url.Url::try_parse("http://0999999999999999999/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://0999999999999999999/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #773" {
-  let result = @url.Url::try_parse("http://foo.0x")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.0x") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #774" {
-  let result = @url.Url::try_parse("http://foo.0XFfFfFfFfFfFfFfFfFfAcE123")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://foo.0XFfFfFfFfFfFfFfFfFfAcE123") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #775" {
-  let result = @url.Url::try_parse("http://💩.123/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("http://💩.123/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #776" {
-  let result = @url.Url::try_parse("https://\u{0000}y")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://\u{0000}y") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5594,9 +5836,10 @@ test "WPT #779" {
 
 ///|
 test "WPT #780" {
-  let result = @url.Url::try_parse("https://￿y")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://￿y") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5668,9 +5911,10 @@ test "WPT #791" {
 
 ///|
 test "WPT #792" {
-  let result = @url.Url::try_parse("")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5688,25 +5932,28 @@ test "WPT #794" {
 
 ///|
 test "WPT #795" {
-  let result = @url.Url::try_parse("https://­/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://­/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #796" {
-  let result = @url.Url::try_parse("https://%C2%AD/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://%C2%AD/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #797" {
-  let result = @url.Url::try_parse("https://xn--/")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("https://xn--/") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5730,25 +5977,28 @@ test "WPT #800" {
 
 ///|
 test "WPT #801" {
-  let result = @url.Url::try_parse("data://:443")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("data://:443") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #802" {
-  let result = @url.Url::try_parse("data://test:test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("data://test:test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #803" {
-  let result = @url.Url::try_parse("data://[:1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("data://[:1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5777,25 +6027,28 @@ test "WPT #806" {
 
 ///|
 test "WPT #807" {
-  let result = @url.Url::try_parse("javascript://:443")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("javascript://:443") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #808" {
-  let result = @url.Url::try_parse("javascript://test:test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("javascript://test:test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #809" {
-  let result = @url.Url::try_parse("javascript://[:1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("javascript://[:1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5819,25 +6072,28 @@ test "WPT #812" {
 
 ///|
 test "WPT #813" {
-  let result = @url.Url::try_parse("mailto://:443")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("mailto://:443") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #814" {
-  let result = @url.Url::try_parse("mailto://test:test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("mailto://test:test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #815" {
-  let result = @url.Url::try_parse("mailto://[:1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("mailto://[:1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5861,25 +6117,28 @@ test "WPT #818" {
 
 ///|
 test "WPT #819" {
-  let result = @url.Url::try_parse("intent://:443")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("intent://:443") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #820" {
-  let result = @url.Url::try_parse("intent://test:test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("intent://test:test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #821" {
-  let result = @url.Url::try_parse("intent://[:1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("intent://[:1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5903,25 +6162,28 @@ test "WPT #824" {
 
 ///|
 test "WPT #825" {
-  let result = @url.Url::try_parse("urn://:443")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("urn://:443") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #826" {
-  let result = @url.Url::try_parse("urn://test:test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("urn://test:test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #827" {
-  let result = @url.Url::try_parse("urn://[:1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("urn://[:1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5945,25 +6207,28 @@ test "WPT #830" {
 
 ///|
 test "WPT #831" {
-  let result = @url.Url::try_parse("turn://:443")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("turn://:443") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #832" {
-  let result = @url.Url::try_parse("turn://test:test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("turn://test:test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #833" {
-  let result = @url.Url::try_parse("turn://[:1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("turn://[:1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -5987,25 +6252,28 @@ test "WPT #836" {
 
 ///|
 test "WPT #837" {
-  let result = @url.Url::try_parse("stun://:443")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("stun://:443") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #838" {
-  let result = @url.Url::try_parse("stun://test:test")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("stun://test:test") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
 ///|
 test "WPT #839" {
-  let result = @url.Url::try_parse("stun://[:1]")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("stun://[:1]") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 
@@ -6208,9 +6476,10 @@ test "WPT #870" {
 
 ///|
 test "WPT #871" {
-  let result = @url.Url::try_parse("non-special://host\\a")
-  guard result is None else {
-    fail("Expected failure but got: \{result.unwrap().to_string().escape()}")
+  try @url.Url::parse("non-special://host\\a") catch {
+    _ => ()
+  } noraise {
+    url => fail("Expected failure but got: \{url.to_string().escape()}")
   }
 }
 

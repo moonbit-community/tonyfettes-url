@@ -24,6 +24,25 @@ pub fn Path::to_string(self : Path) -> String {
 }
 
 ///|
+/// Whether this is an opaque path: a single string that is not split into
+/// segments, as in `mailto:someone@example.com` or `data:text/plain,x`.
+/// See: https://url.spec.whatwg.org/#url-opaque-path
+pub fn Path::is_opaque(self : Path) -> Bool {
+  self is Opaque(_)
+}
+
+///|
+/// The path segments, or `None` for an opaque path. Segments are
+/// percent-encoded and do not include the `/` separators, so `/a/b%20c` yields
+/// `"a"` and `"b%20c"`, and `/` yields a single empty segment.
+pub fn Path::segments(self : Path) -> Iter[String]? {
+  match self {
+    Opaque(_) => None
+    Segments(segments) => Some(segments.iter())
+  }
+}
+
+///|
 pub impl Show for Path with fn output(self : Path, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
