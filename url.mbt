@@ -237,6 +237,14 @@ pub suberror UpdateError {
 
 ///|
 /// Copy a URL so that an update leaves the original untouched.
+///
+/// This is a shallow copy: every component is shared, including the path's
+/// segment array. That is safe because a path is only mutated in place while
+/// the parser builds it, on an array the parser allocated itself (`parse`
+/// starts from `Url::new()`, relative resolution copies the base's path, and
+/// `reparse_pathname` installs a fresh array before parsing). Once a `Url`
+/// is returned to the caller its path array is never touched again, so a
+/// `with_*` update costs one small struct allocation.
 fn Url::clone(self : Url) -> Url {
   {
     scheme: self.scheme,
@@ -244,7 +252,7 @@ fn Url::clone(self : Url) -> Url {
     password: self.password,
     host: self.host,
     port: self.port,
-    path: self.path.clone(),
+    path: self.path,
     query: self.query,
     fragment: self.fragment,
   }
