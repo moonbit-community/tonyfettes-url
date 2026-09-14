@@ -107,28 +107,16 @@ pub fn Url::scheme(Self) -> String
 #deprecated
 pub fn Url::search(Self) -> String
 pub fn Url::search_params(Self) -> UrlSearchParams
-#deprecated
-pub fn Url::set_hash(Self, String) -> Unit
-#deprecated
-pub fn Url::set_host(Self, String) -> Unit
-#deprecated
-pub fn Url::set_hostname(Self, String) -> Unit
-#deprecated
-pub fn Url::set_href(Self, String) -> Unit raise ValidationError
-#deprecated
-pub fn Url::set_password(Self, String) -> Unit
-#deprecated
-pub fn Url::set_pathname(Self, String) -> Unit
-#deprecated
-pub fn Url::set_port(Self, String) -> Unit
-#deprecated
-pub fn Url::set_protocol(Self, String) -> Unit
-#deprecated
-pub fn Url::set_search(Self, String) -> Unit
-#deprecated
+pub fn Url::set_fragment(Self, String?) -> Unit
+pub fn Url::set_host(Self, Host?) -> Unit raise UpdateError
+pub fn Url::set_password(Self, String) -> Unit raise UpdateError
+pub fn Url::set_path(Self, Path) -> Unit raise UpdateError
+pub fn Url::set_pathname(Self, String) -> Unit raise UpdateError
+pub fn Url::set_port(Self, UInt16?) -> Unit raise UpdateError
+pub fn Url::set_query(Self, String?) -> Unit
+pub fn Url::set_scheme(Self, String) -> Unit raise UpdateError
 pub fn Url::set_search_params(Self, UrlSearchParams) -> Unit
-#deprecated
-pub fn Url::set_username(Self, String) -> Unit
+pub fn Url::set_username(Self, String) -> Unit raise UpdateError
 pub fn Url::to_string(Self) -> String
 pub fn Url::username(Self) -> String
 pub fn Url::with_fragment(Self, String?) -> Self

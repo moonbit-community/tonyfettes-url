@@ -213,6 +213,68 @@ test "Url::with_* return a new URL and leave the original untouched" {
 }
 
 ///|
+test "Url::set_* mutate in place with the rules of with_*" {
+  let url = @url.Url::parse("http://example.com/path")
+  url.set_scheme("HTTPS")
+  url.set_username("new user")
+  url.set_password("new:pass")
+  url.set_host(Some(@url.Host::parse("example.org")))
+  url.set_port(Some(9000))
+  url.set_pathname("/a/./b c")
+  url.set_query(Some("q=a b"))
+  url.set_fragment(Some("frag"))
+  assert_eq(
+    url.to_string(),
+    "https://new%20user:new%3Apass@example.org:9000/a/b%20c?q=a%20b#frag",
+  )
+  url.set_path(@url.Url::parse("http://x/p/q").path())
+  url.set_search_params(UrlSearchParams([("k", "v w")]))
+  assert_eq(
+    url.to_string(),
+    "https://new%20user:new%3Apass@example.org:9000/p/q?k=v+w#frag",
+  )
+}
+
+///|
+test "Url::set_* reject like with_* and leave the URL unchanged" {
+  let url = @url.Url::parse("http://user@example.com/")
+  let outcome = try url.set_scheme("mailto") catch {
+    err => Err(err)
+  } noraise {
+    _ => Ok(())
+  }
+  debug_inspect(
+    outcome,
+    content=(
+      #|Err(SpecialSchemeMismatch)
+    ),
+  )
+  let outcome = try url.set_host(None) catch {
+    err => Err(err)
+  } noraise {
+    _ => Ok(())
+  }
+  debug_inspect(
+    outcome,
+    content=(
+      #|Err(HostRequired)
+    ),
+  )
+  assert_eq(url.to_string(), "http://user@example.com/")
+}
+
+///|
+test "URLs derived with with_* do not observe later set_* on the original" {
+  let original = @url.Url::parse("http://example.com/x/y?q")
+  let derived = original.with_port(Some(8080))
+  original.set_pathname("/z")
+  original.set_query(None)
+  original.set_path(@url.Url::parse("http://h/other").path())
+  assert_eq(original.to_string(), "http://example.com/other")
+  assert_eq(derived.to_string(), "http://example.com:8080/x/y?q")
+}
+
+///|
 test "Url::with_scheme normalizes case and the default port" {
   let url = @url.Url::parse("http://example.com:443/")
   assert_eq(url.with_scheme("HTTPS").to_string(), "https://example.com/")

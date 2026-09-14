@@ -3,7 +3,9 @@
 /// https://url.spec.whatwg.org/#url-representation
 ///
 /// Contains scheme, credentials (username/password), host, port, path, query,
-/// and fragment.
+/// and fragment. Components are read with typed getters and changed either in
+/// place with `set_*` or on a copy with `with_*`; both follow the same rules
+/// and raise `UpdateError` for changes the standard forbids.
 struct Url {
   mut scheme : String
   mut username : String
@@ -210,9 +212,10 @@ pub fn Url::search_params(self : Url) -> UrlSearchParams {
 }
 
 ///|
-/// Reasons a `with_*` update is rejected. Each variant corresponds to an early
-/// return in the URL Standard's setter algorithms, where the JavaScript API
-/// silently keeps the old value.
+/// Reasons an update is rejected. Each variant corresponds to an early return
+/// in the URL Standard's setter algorithms, where the JavaScript API silently
+/// keeps the old value. Both the in-place `set_*` methods and the copying
+/// `with_*` methods raise it, and a rejected update leaves the URL unchanged.
 pub suberror UpdateError {
   /// The scheme is not `alpha *( alphanumeric / "+" / "-" / "." )`.
   InvalidScheme
@@ -236,15 +239,15 @@ pub suberror UpdateError {
 } derive(Debug, Eq)
 
 ///|
-/// Copy a URL so that an update leaves the original untouched.
+/// Copy a URL so that a `with_*` update leaves the original untouched.
 ///
 /// This is a shallow copy: every component is shared, including the path's
-/// segment array. That is safe because a path is only mutated in place while
-/// the parser builds it, on an array the parser allocated itself (`parse`
-/// starts from `Url::new()`, relative resolution copies the base's path, and
-/// `reparse_pathname` installs a fresh array before parsing). Once a `Url`
-/// is returned to the caller its path array is never touched again, so a
-/// `with_*` update costs one small struct allocation.
+/// segment array. That is safe because a path array is only mutated in place
+/// while the parser builds it, on an array the parser allocated itself
+/// (`parse` starts from `Url::new()`, relative resolution copies the base's
+/// path, and `set_pathname` installs a fresh array before parsing). The
+/// `set_*` methods replace components, never mutate them in place, so URLs
+/// derived from each other never observe each other's updates.
 fn Url::clone(self : Url) -> Url {
   {
     scheme: self.scheme,
@@ -271,7 +274,7 @@ fn Url::cannot_have_credentials_or_port(self : Url) -> Bool {
 }
 
 ///|
-/// Return a copy with a new scheme.
+/// Set the scheme in place.
 /// See: https://url.spec.whatwg.org/#dom-url-protocol
 ///
 /// The scheme is lowercased, and a port equal to the new scheme's default port
@@ -280,7 +283,7 @@ fn Url::cannot_have_credentials_or_port(self : Url) -> Bool {
 /// one or the reverse, `CannotHaveCredentialsOrPort` when switching to `file`
 /// while credentials or a port are present, and `HostRequired` when switching
 /// away from a `file` URL whose host is empty.
-pub fn Url::with_scheme(self : Url, scheme : String) -> Url raise UpdateError {
+pub fn Url::set_scheme(self : Url, scheme : String) -> Unit raise UpdateError {
   guard scheme[:] is [first, .. rest] && first.is_ascii_alphabetic() else {
     raise InvalidScheme
   }
@@ -291,7 +294,7 @@ pub fn Url::with_scheme(self : Url, scheme : String) -> Url raise UpdateError {
   }
   let scheme = scheme.to_lower()
   if scheme == self.scheme {
-    return self.clone()
+    return
   }
   if is_special_scheme(scheme) != self.is_special() {
     raise SpecialSchemeMismatch
@@ -302,52 +305,78 @@ pub fn Url::with_scheme(self : Url, scheme : String) -> Url raise UpdateError {
   if self.scheme == "file" && has_empty_host(self.host) {
     raise HostRequired
   }
-  let url = self.clone()
-  url.scheme = scheme
-  if url.port == default_port(scheme) {
-    url.port = None
+  self.scheme = scheme
+  if self.port == default_port(scheme) {
+    self.port = None
   }
+}
+
+///|
+/// Return a copy with a new scheme; the rules are those of `Url::set_scheme`.
+pub fn Url::with_scheme(self : Url, scheme : String) -> Url raise UpdateError {
+  let url = self.clone()
+  url.set_scheme(scheme)
   url
 }
 
 ///|
-/// Return a copy with a new username, percent-encoded with the userinfo set.
+/// Set the username in place, percent-encoded with the userinfo set.
 /// See: https://url.spec.whatwg.org/#dom-url-username
 ///
 /// Raises `CannotHaveCredentialsOrPort` for URLs without a host, with an
 /// empty host, or with the `file` scheme.
+pub fn Url::set_username(
+  self : Url,
+  username : String,
+) -> Unit raise UpdateError {
+  guard !self.cannot_have_credentials_or_port() else {
+    raise CannotHaveCredentialsOrPort
+  }
+  self.username = utf8_percent_encode(username, userinfo_percent_encode_set)
+}
+
+///|
+/// Return a copy with a new username; the rules are those of
+/// `Url::set_username`.
 pub fn Url::with_username(
   self : Url,
   username : String,
 ) -> Url raise UpdateError {
-  guard !self.cannot_have_credentials_or_port() else {
-    raise CannotHaveCredentialsOrPort
-  }
   let url = self.clone()
-  url.username = utf8_percent_encode(username, userinfo_percent_encode_set)
+  url.set_username(username)
   url
 }
 
 ///|
-/// Return a copy with a new password, percent-encoded with the userinfo set.
+/// Set the password in place, percent-encoded with the userinfo set.
 /// See: https://url.spec.whatwg.org/#dom-url-password
 ///
 /// Raises `CannotHaveCredentialsOrPort` for URLs without a host, with an
 /// empty host, or with the `file` scheme.
+pub fn Url::set_password(
+  self : Url,
+  password : String,
+) -> Unit raise UpdateError {
+  guard !self.cannot_have_credentials_or_port() else {
+    raise CannotHaveCredentialsOrPort
+  }
+  self.password = utf8_percent_encode(password, userinfo_percent_encode_set)
+}
+
+///|
+/// Return a copy with a new password; the rules are those of
+/// `Url::set_password`.
 pub fn Url::with_password(
   self : Url,
   password : String,
 ) -> Url raise UpdateError {
-  guard !self.cannot_have_credentials_or_port() else {
-    raise CannotHaveCredentialsOrPort
-  }
   let url = self.clone()
-  url.password = utf8_percent_encode(password, userinfo_percent_encode_set)
+  url.set_password(password)
   url
 }
 
 ///|
-/// Return a copy with a new host.
+/// Set the host in place.
 /// See: https://url.spec.whatwg.org/#dom-url-hostname
 ///
 /// `None` removes the host, which only non-special URLs allow. A `file` URL
@@ -357,9 +386,9 @@ pub fn Url::with_password(
 /// `HostKindMismatch` when the host kind does not fit the scheme, and
 /// `CannotHaveCredentialsOrPort` when removing or emptying the host of a URL
 /// that carries credentials or a port.
-pub fn Url::with_host(self : Url, host : Host?) -> Url raise UpdateError {
+pub fn Url::set_host(self : Url, host : Host?) -> Unit raise UpdateError {
   guard self.path is Segments(_) else { raise HasOpaquePath }
-  let host = match host {
+  self.host = match host {
     None => {
       if self.is_special() {
         raise HostRequired
@@ -394,29 +423,40 @@ pub fn Url::with_host(self : Url, host : Host?) -> Url raise UpdateError {
     }
     Some(IPv6(_)) => host
   }
+}
+
+///|
+/// Return a copy with a new host; the rules are those of `Url::set_host`.
+pub fn Url::with_host(self : Url, host : Host?) -> Url raise UpdateError {
   let url = self.clone()
-  url.host = host
+  url.set_host(host)
   url
 }
 
 ///|
-/// Return a copy with a new port. `None` removes the port, and a port equal to
-/// the scheme's default port is stored as `None`.
+/// Set the port in place. `None` removes the port, and a port equal to the
+/// scheme's default port is stored as `None`.
 /// See: https://url.spec.whatwg.org/#dom-url-port
 ///
 /// Raises `CannotHaveCredentialsOrPort` for URLs without a host, with an
 /// empty host, or with the `file` scheme.
-pub fn Url::with_port(self : Url, port : UInt16?) -> Url raise UpdateError {
+pub fn Url::set_port(self : Url, port : UInt16?) -> Unit raise UpdateError {
   guard !self.cannot_have_credentials_or_port() else {
     raise CannotHaveCredentialsOrPort
   }
+  self.port = if port == default_port(self.scheme) { None } else { port }
+}
+
+///|
+/// Return a copy with a new port; the rules are those of `Url::set_port`.
+pub fn Url::with_port(self : Url, port : UInt16?) -> Url raise UpdateError {
   let url = self.clone()
-  url.port = if port == default_port(self.scheme) { None } else { port }
+  url.set_port(port)
   url
 }
 
 ///|
-/// Return a copy with a new path.
+/// Set the path in place from a `Path` value.
 /// See: https://url.spec.whatwg.org/#dom-url-pathname
 ///
 /// Segments are taken literally: each one is percent-encoded with the path
@@ -425,10 +465,9 @@ pub fn Url::with_port(self : Url, port : UInt16?) -> Url raise UpdateError {
 /// segment list becomes `[""]` where the serialization needs a `/`, as the
 /// parser does. Raises `InvalidPath` for an opaque path on a URL that has a
 /// host or a special scheme, an opaque path containing `?` or `#`, or a
-/// segment containing `/` (or `\` on a special URL).
-pub fn Url::with_path(self : Url, path : Path) -> Url raise UpdateError {
-  let url = self.clone()
-  url.path = match path {
+/// segment containing `/` (or `\\` on a special URL).
+pub fn Url::set_path(self : Url, path : Path) -> Unit raise UpdateError {
+  self.path = match path {
     Opaque(opaque_path) => {
       if self.is_special() || self.host is Some(_) {
         raise InvalidPath
@@ -460,15 +499,31 @@ pub fn Url::with_path(self : Url, path : Path) -> Url raise UpdateError {
       Segments(encoded)
     }
   }
+}
+
+///|
+/// Return a copy with a new path; the rules are those of `Url::set_path`.
+pub fn Url::with_path(self : Url, path : Path) -> Url raise UpdateError {
+  let url = self.clone()
+  url.set_path(path)
   url
 }
 
 ///|
-/// Replace the path by parsing `pathname` with the path start state as state
-/// override, exactly as the pathname setter does. The caller has already
-/// checked that the path is not opaque.
+/// Set the path in place by parsing `pathname`, with the same rules as the
+/// JavaScript `pathname` setter: `.` and `..` segments are resolved,
+/// characters outside the path set are percent-encoded (including `?` and
+/// `#`), `\\` counts as `/` on special URLs, and a `file` URL normalizes a
+/// Windows drive letter. A `/` that should stay inside a segment must be
+/// written as `%2F`. The result is never an opaque path.
 /// See: https://url.spec.whatwg.org/#dom-url-pathname
-fn Url::reparse_pathname(self : Url, pathname : String) -> Unit {
+///
+/// Raises `HasOpaquePath` when the URL has an opaque path.
+pub fn Url::set_pathname(
+  self : Url,
+  pathname : String,
+) -> Unit raise UpdateError {
+  guard self.path is Segments(_) else { raise HasOpaquePath }
   let cleaned = remove_ascii_tab_or_newline(pathname[:])
   if cleaned.is_empty() {
     // Path start state with a state override appends the empty string when
@@ -490,33 +545,24 @@ fn Url::reparse_pathname(self : Url, pathname : String) -> Unit {
 }
 
 ///|
-/// Return a copy whose path is parsed from `pathname`, with the same rules
-/// as the JavaScript `pathname` setter: `.` and `..` segments are resolved,
-/// characters outside the path set are percent-encoded (including `?` and
-/// `#`), `\` counts as `/` on special URLs, and a `file` URL normalizes a
-/// Windows drive letter. A `/` that should stay inside a segment must be
-/// written as `%2F`. The result is never an opaque path.
-/// See: https://url.spec.whatwg.org/#dom-url-pathname
-///
-/// Raises `HasOpaquePath` when the URL has an opaque path.
+/// Return a copy whose path is parsed from `pathname`; the rules are those
+/// of `Url::set_pathname`.
 pub fn Url::with_pathname(
   self : Url,
   pathname : String,
 ) -> Url raise UpdateError {
-  guard self.path is Segments(_) else { raise HasOpaquePath }
   let url = self.clone()
-  url.reparse_pathname(pathname)
+  url.set_pathname(pathname)
   url
 }
 
 ///|
-/// Return a copy with a new query, percent-encoded with the query set (the
+/// Set the query in place, percent-encoded with the query set (the
 /// special-query set for special schemes). `None` removes the query;
 /// `Some("")` keeps a bare `?`.
 /// See: https://url.spec.whatwg.org/#dom-url-search
-pub fn Url::with_query(self : Url, query : String?) -> Url {
-  let url = self.clone()
-  url.query = query.map(query => {
+pub fn Url::set_query(self : Url, query : String?) -> Unit {
+  self.query = query.map(query => {
     utf8_percent_encode(
       query,
       if self.is_special() {
@@ -526,29 +572,50 @@ pub fn Url::with_query(self : Url, query : String?) -> Url {
       },
     )
   })
+}
+
+///|
+/// Return a copy with a new query; the rules are those of `Url::set_query`.
+pub fn Url::with_query(self : Url, query : String?) -> Url {
+  let url = self.clone()
+  url.set_query(query)
   url
 }
 
 ///|
-/// Return a copy with a new fragment, percent-encoded with the fragment set.
-/// `None` removes the fragment; `Some("")` keeps a bare `#`.
+/// Set the fragment in place, percent-encoded with the fragment set. `None`
+/// removes the fragment; `Some("")` keeps a bare `#`.
 /// See: https://url.spec.whatwg.org/#dom-url-hash
-pub fn Url::with_fragment(self : Url, fragment : String?) -> Url {
-  let url = self.clone()
-  url.fragment = fragment.map(fragment => {
+pub fn Url::set_fragment(self : Url, fragment : String?) -> Unit {
+  self.fragment = fragment.map(fragment => {
     utf8_percent_encode(fragment, fragment_percent_encode_set)
   })
+}
+
+///|
+/// Return a copy with a new fragment; the rules are those of
+/// `Url::set_fragment`.
+pub fn Url::with_fragment(self : Url, fragment : String?) -> Url {
+  let url = self.clone()
+  url.set_fragment(fragment)
   url
 }
 
 ///|
-/// Return a copy whose query is the serialization of `params`, or no query at
-/// all when `params` is empty.
+/// Set the query in place to the serialization of `params`, or remove it when
+/// `params` is empty.
 /// See: https://url.spec.whatwg.org/#concept-urlsearchparams-update
-pub fn Url::with_search_params(self : Url, params : UrlSearchParams) -> Url {
+pub fn Url::set_search_params(self : Url, params : UrlSearchParams) -> Unit {
   let serialized = params.to_string()
+  self.query = if serialized.is_empty() { None } else { Some(serialized) }
+}
+
+///|
+/// Return a copy whose query is the serialization of `params`; the rules are
+/// those of `Url::set_search_params`.
+pub fn Url::with_search_params(self : Url, params : UrlSearchParams) -> Url {
   let url = self.clone()
-  url.query = if serialized.is_empty() { None } else { Some(serialized) }
+  url.set_search_params(params)
   url
 }
 
@@ -738,8 +805,6 @@ priv enum State {
   Authority
   /// https://url.spec.whatwg.org/#host-state
   Host
-  /// https://url.spec.whatwg.org/#hostname-state
-  Hostname
   /// https://url.spec.whatwg.org/#port-state
   Port
   /// https://url.spec.whatwg.org/#path-start-state
@@ -838,9 +903,7 @@ fn Url::parse_basic(
     None => SchemeStart
   }
   // Special case: file URLs with host/hostname state override use FileHost
-  if has_state_override &&
-    url.scheme == "file" &&
-    (state is Host || state is Hostname) {
+  if has_state_override && url.scheme == "file" && state is Host {
     state = FileHost
   }
   // 3. Let buffer be the empty string.
@@ -1167,9 +1230,7 @@ fn Url::parse_basic(
             buffer.write_char(c)
           }
         // Host state (https://url.spec.whatwg.org/#host-state)
-        // Hostname state (https://url.spec.whatwg.org/#hostname-state)
-        // These states are nearly identical, with hostname state not transitioning to port.
-        Host | Hostname => {
+        Host => {
           if has_state_override && url.scheme == "file" {
             state = FileHost
             continue view
@@ -1190,9 +1251,6 @@ fn Url::parse_basic(
           } else if c is ':' && !inside_brackets {
             if buffer.is_empty() {
               raise HostMissing
-            }
-            if state_override is Some(Hostname) {
-              raise HostInvalidCodePoint
             }
             let host = Host::parse(
               buffer.to_string(),
@@ -1766,7 +1824,7 @@ fn Url::parse_basic(
           }
         }
       }
-      Host | Hostname => {
+      Host => {
         if url.is_special() && buffer.is_empty() {
           raise HostMissing
         }

@@ -28,10 +28,12 @@ url.to_string()     // "https://user:pass@example.com:8080/path?query=value#frag
 let base = @url.Url::parse("https://example.com/a/b/c")
 @url.Url::parse("../d", base~).to_string() // "https://example.com/a/d"
 
-// Immutable updates: every with_* returns a new Url
+// Updates: with_* returns a new Url, set_* changes it in place
 let updated = url.with_scheme("http").with_port(None).with_fragment(None)
 updated.to_string() // "http://user:pass@example.com/path?query=value"
 url.to_string()     // unchanged
+url.set_fragment(Some("top"))
+url.to_string()     // "https://user:pass@example.com:8080/path?query=value#top"
 ```
 
 ## API
@@ -77,23 +79,27 @@ JavaScript `URL` interface.
 
 ### Updates
 
-`with_*` methods return a modified copy and never touch the receiver.
-Values are normalized and percent-encoded the way the parser would. Updates the
-URL Standard forbids raise `UpdateError` instead of being silently ignored.
-`with_pathname` parses a path string with the rules of the JavaScript
-`pathname` setter, resolving `.` and `..`; `with_path` transplants another
-URL's `Path` as is.
+Every component has a pair of update methods with identical rules: `set_*`
+changes the URL in place, `with_*` returns a modified copy and leaves the
+receiver untouched. Values are normalized and percent-encoded the way the
+parser would. Updates the URL Standard forbids raise `UpdateError` instead of
+being silently ignored, and a rejected update changes nothing.
+`set_pathname`/`with_pathname` parse a path string with the rules of the
+JavaScript `pathname` setter, resolving `.` and `..`; `set_path`/`with_path`
+take another URL's `Path` as is.
 
 | Method | Raises |
 |--------|--------|
-| `with_scheme(String)` | `InvalidScheme`, `SpecialSchemeMismatch`, `CannotHaveCredentialsOrPort`, `HostRequired` |
-| `with_username(String)` / `with_password(String)` | `CannotHaveCredentialsOrPort` |
-| `with_host(Host?)` | `HasOpaquePath`, `HostRequired`, `HostKindMismatch`, `CannotHaveCredentialsOrPort` |
-| `with_port(UInt16?)` | `CannotHaveCredentialsOrPort` |
-| `with_pathname(String)` | `HasOpaquePath` |
-| `with_path(Path)` | `InvalidPath` |
-| `with_query(String?)` / `with_fragment(String?)` | never |
-| `with_search_params(UrlSearchParams)` | never |
+| `set_scheme(String)` | `InvalidScheme`, `SpecialSchemeMismatch`, `CannotHaveCredentialsOrPort`, `HostRequired` |
+| `set_username(String)` / `set_password(String)` | `CannotHaveCredentialsOrPort` |
+| `set_host(Host?)` | `HasOpaquePath`, `HostRequired`, `HostKindMismatch`, `CannotHaveCredentialsOrPort` |
+| `set_port(UInt16?)` | `CannotHaveCredentialsOrPort` |
+| `set_pathname(String)` | `HasOpaquePath` |
+| `set_path(Path)` | `InvalidPath` |
+| `set_query(String?)` / `set_fragment(String?)` | never |
+| `set_search_params(UrlSearchParams)` | never |
+
+Each `set_x` has a `with_x` twin with the same parameters that returns `Url`.
 
 ### Origin
 
@@ -133,17 +139,17 @@ url.with_search_params(params)
 the mutating methods (`append`, `delete`, `set`, `sort`) modify that array in
 place.
 
-### Deprecated JavaScript-style API
+### Deprecated JavaScript-style getters
 
-The getters `href()`, `protocol()`, `search()`, `hash()` and the mutating
-setters `set_*` mirror the JavaScript `URL` interface: string in, string out,
-rejected values silently ignored. They are kept for compatibility and marked
-deprecated; use the typed getters and `with_*` methods instead.
+`href()`, `protocol()`, `search()` and `hash()` return the serialized
+fragments the JavaScript `URL` interface exposes. They are kept for
+compatibility and marked deprecated; use `to_string()`, `scheme()`, `query()`
+and `fragment()` instead.
 
 ## Features
 
 - Full WHATWG URL Standard compliance
-- 1250+ WPT test vectors passing (parsing, setters, `URLSearchParams`)
+- 980+ WPT test vectors passing (parsing and `URLSearchParams`)
 - Special scheme handling (http, https, ftp, file, ws, wss)
 - Default port normalization
 - Relative URL resolution
@@ -165,7 +171,6 @@ Regenerate the WPT tests:
 
 ```bash
 python3 scripts/generate_wpt_tests.py > wpt_test.mbt
-python3 scripts/generate_wpt_setters_tests.py > wpt_setters_wbtest.mbt
 ```
 
 ## License
