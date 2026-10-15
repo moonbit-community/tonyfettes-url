@@ -10,6 +10,7 @@ PUBLISH = ROOT / "publish"
 
 # Source files to include (excluding test files)
 SOURCE_FILES = [
+    "extends.mbt",
     "host.mbt",
     "ipv4.mbt",
     "ipv6.mbt",

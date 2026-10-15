@@ -1,7 +1,7 @@
 ///|
 /// Represents an IPv4 address as a 32-bit unsigned integer.
 /// See: https://url.spec.whatwg.org/#concept-ipv4
-struct IPv4(UInt) derive(Debug)
+struct IPv4(UInt32) derive(Debug)
 
 ///|
 /// Serialize IPv4 address to dotted-decimal notation (e.g., "192.168.1.1").
@@ -28,7 +28,7 @@ pub impl ToJson for IPv4 with fn to_json(self : IPv4) -> Json {
   let b1 = ((self.0 >> 16) & 0xFF).to_byte()
   let b2 = ((self.0 >> 8) & 0xFF).to_byte()
   let b3 = (self.0 & 0xFF).to_byte()
-  [b0, b1, b2, b3].to_json()
+  Json([b0, b1, b2, b3])
 }
 
 ///|
@@ -128,9 +128,9 @@ fn IPv4::parse_number(input : StringView) -> UInt64 raise ValidationError {
       let mut value : UInt64 = 0
       for c in rest {
         let digit = match c {
-          '0'..='9' => c.to_int() - '0'
-          'a'..='f' => c.to_int() - 'a' + 10
-          'A'..='F' => c.to_int() - 'A' + 10
+          '0'..<='9' => c.to_int() - '0'
+          'a'..<='f' => c.to_int() - 'a' + 10
+          'A'..<='F' => c.to_int() - 'A' + 10
           _ => raise IPv4NonNumericPart
         }
         guard digit < 16 else { raise IPv4NonNumericPart }
@@ -139,7 +139,7 @@ fn IPv4::parse_number(input : StringView) -> UInt64 raise ValidationError {
       value
     }
     // 5. If input starts with "0" followed by digits, use radix 8 (octal)
-    ['0', '0'..='9' as c, .. rest] => {
+    ['0', '0'..<='9' as c, .. rest] => {
       guard c >= '0' && c <= '7' else { raise IPv4NonNumericPart }
       let mut value : UInt64 = (c.to_int() - '0').to_uint64()
       for c in rest {
@@ -151,7 +151,7 @@ fn IPv4::parse_number(input : StringView) -> UInt64 raise ValidationError {
     // 6. Single "0" is decimal 0
     ['0'] => 0UL
     // Default: radix 10 (decimal)
-    ['1'..='9' as c, .. rest] => {
+    ['1'..<='9' as c, .. rest] => {
       let mut value : UInt64 = (c.to_int() - '0').to_uint64()
       for c in rest {
         guard c >= '0' && c <= '9' else { raise IPv4NonNumericPart }

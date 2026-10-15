@@ -546,7 +546,7 @@ pub impl Show for Url with fn output(self : Url, logger : &Logger) -> Unit {
 /// See: https://url.spec.whatwg.org/#dom-url-tojson
 /// The toJSON() method returns the serialization of the URL.
 pub impl ToJson for Url with fn to_json(self : Url) -> Json {
-  self.to_string().to_json()
+  Json(self.to_string())
 }
 
 ///|
@@ -601,14 +601,14 @@ fn trim_c0_control_or_space(input : StringView) -> StringView {
   // Trim from start
   let input = for input = input {
     match input {
-      ['\u{0000}'..='\u{0020}', .. rest] => continue rest
+      ['\u{0000}'..<='\u{0020}', .. rest] => continue rest
       input => break input
     }
   }
   // Trim from end
   let input = for input = input {
     match input {
-      [.. rest, '\u{0000}'..='\u{0020}'] => continue rest
+      [.. rest, '\u{0000}'..<='\u{0020}'] => continue rest
       input => break input
     }
   }
@@ -693,7 +693,7 @@ priv enum State {
 ///|
 priv struct StringPointer {
   input : StringView
-  mut pointer : Int
+  mut pointer : Int32
 }
 
 ///|
@@ -765,7 +765,7 @@ fn Url::parse_basic(
   base? : Url,
   input : StringView,
   state_override? : State,
-  validation_errors? : Array[ValidationError] = [],
+  validation_errors~ : Array[ValidationError] = [],
 ) -> Url? {
   let has_state_override = state_override is Some(_)
   // 2. If state override is not given, set state to scheme start state.
@@ -846,7 +846,7 @@ fn Url::parse_basic(
         // 4. Otherwise, return failure.
         Scheme =>
           match c {
-            'a'..='z' | 'A'..='Z' | '0'..='9' | '+' | '-' | '.' =>
+            'a'..<='z' | 'A'..<='Z' | '0'..<='9' | '+' | '-' | '.' =>
               buffer.write_char(c.to_ascii_lowercase())
             ':' => {
               let next_scheme = buffer.to_string()

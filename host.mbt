@@ -109,18 +109,18 @@ fn percent_decode_bytes(input : Bytes) -> Bytes {
     match view {
       [b'%', c0, c1, .. rest] => {
         let b0 = match c0 {
-          b'0'..=b'9' => c0.to_int() - b'0'.to_int()
-          b'a'..=b'f' => c0.to_int() - b'a'.to_int() + 10
-          b'A'..=b'F' => c0.to_int() - b'A'.to_int() + 10
+          b'0'..<=b'9' => c0.to_int() - b'0'.to_int()
+          b'a'..<=b'f' => c0.to_int() - b'a'.to_int() + 10
+          b'A'..<=b'F' => c0.to_int() - b'A'.to_int() + 10
           _ => {
             output.write_byte(b'%')
             continue view[1:]
           }
         }
         let b1 = match c1 {
-          b'0'..=b'9' => c1.to_int() - b'0'.to_int()
-          b'a'..=b'f' => c1.to_int() - b'a'.to_int() + 10
-          b'A'..=b'F' => c1.to_int() - b'A'.to_int() + 10
+          b'0'..<=b'9' => c1.to_int() - b'0'.to_int()
+          b'a'..<=b'f' => c1.to_int() - b'a'.to_int() + 10
+          b'A'..<=b'F' => c1.to_int() - b'A'.to_int() + 10
           _ => {
             output.write_byte(b'%')
             output.write_byte(c0)
@@ -146,7 +146,7 @@ fn percent_decode_bytes(input : Bytes) -> Bytes {
 fn contains_forbidden_domain_codepoint(s : String) -> Bool {
   for c in s {
     // C0 controls (U+0000-U+001F) and DEL (U+007F)
-    if c is ('\u{0000}'..='\u{001f}' | '\u{007f}') {
+    if c is ('\u{0000}'..<='\u{001f}' | '\u{007f}') {
       return true
     }
     // Forbidden host code points plus %
@@ -195,7 +195,7 @@ fn contains_forbidden_domain_codepoint(s : String) -> Bool {
 /// 9. Return asciiDomain.
 pub fn Host::parse(
   input : StringView,
-  is_opaque? : Bool = false,
+  is_opaque~ : Bool = false,
 ) -> Host raise ValidationError {
   match input {
     // 1. If input starts with U+005B ([)
@@ -291,7 +291,7 @@ fn ends_in_a_number(input : StringView) -> Bool {
       match last {
         ['0', 'x' | 'X', .. last] =>
           for c in last {
-            if c is ('0'..='9' | 'a'..='f' | 'A'..='F') {
+            if c is ('0'..<='9' | 'a'..<='f' | 'A'..<='F') {
               continue
             } else {
               return false
@@ -299,9 +299,9 @@ fn ends_in_a_number(input : StringView) -> Bool {
           } nobreak {
             return true
           }
-        ['0'..='9', .. last] =>
+        ['0'..<='9', .. last] =>
           for c in last {
-            if c is ('0'..='9') {
+            if c is ('0'..<='9') {
               continue
             } else {
               return false
@@ -357,7 +357,7 @@ let hex_digits : ReadOnlyArray[Char] = [
 /// The C0 control percent-encode set are the C0 controls and all code points
 /// greater than U+007E (~).
 fn c0_control_percent_encode_set(char : Char) -> Bool {
-  return char is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_)
+  return char is ('\u{0000}'..<='\u{001f}' | '\u{007f}'..<_)
 }
 
 ///|
@@ -367,7 +367,7 @@ fn c0_control_percent_encode_set(char : Char) -> Bool {
 /// U+0020 SPACE, U+0022 ("), U+0023 (#), U+003C (<), and U+003E (>).
 fn query_percent_encode_set(char : Char) -> Bool {
   return char
-    is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '#' | '<' | '>')
+    is ('\u{0000}'..<='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '#' | '<' | '>')
 }
 
 ///|
@@ -377,7 +377,7 @@ fn query_percent_encode_set(char : Char) -> Bool {
 /// U+0027 (').
 fn special_query_percent_encode_set(char : Char) -> Bool {
   return char
-    is ('\u{0000}'..='\u{001f}'
+    is ('\u{0000}'..<='\u{001f}'
     | '\u{007f}'..<_
     | ' '
     | '"'
@@ -394,7 +394,7 @@ fn special_query_percent_encode_set(char : Char) -> Bool {
 /// U+0020 SPACE, U+0022 ("), U+003C (<), U+003E (>), and U+0060 (`).
 fn fragment_percent_encode_set(char : Char) -> Bool {
   return char
-    is ('\u{0000}'..='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '<' | '>' | '`')
+    is ('\u{0000}'..<='\u{001f}' | '\u{007f}'..<_ | ' ' | '"' | '<' | '>' | '`')
 }
 
 ///|
@@ -404,7 +404,7 @@ fn fragment_percent_encode_set(char : Char) -> Bool {
 /// U+003F (?), U+0060 (`), U+007B ({), and U+007D (}).
 fn path_percent_encode_set(char : Char) -> Bool {
   return char
-    is ('\u{0000}'..='\u{001f}'
+    is ('\u{0000}'..<='\u{001f}'
     | '\u{007f}'..<_
     | ' '
     | '"'
@@ -426,7 +426,7 @@ fn path_percent_encode_set(char : Char) -> Bool {
 /// to U+005E (^), and U+007C (|).
 fn userinfo_percent_encode_set(char : Char) -> Bool {
   return char
-    is ('\u{0000}'..='\u{001f}'
+    is ('\u{0000}'..<='\u{001f}'
     | '\u{007f}'..<_
     | ' '
     | '"'
@@ -443,7 +443,7 @@ fn userinfo_percent_encode_set(char : Char) -> Bool {
     | ';'
     | '='
     | '@'
-    | '['..=']'
+    | '['..<=']'
     | '|')
 }
 
@@ -452,7 +452,7 @@ fn userinfo_percent_encode_set(char : Char) -> Bool {
 fn utf8_percent_encode(
   input : StringView,
   percent_encode_set : (Char) -> Bool,
-  space_as_plus? : Bool = false,
+  space_as_plus~ : Bool = false,
 ) -> String {
   let output = StringBuilder()
   let encode_output = @encoding/utf8.encode(input)

@@ -14,9 +14,9 @@ struct IPv6(FixedArray[UInt16]) derive(Debug)
 pub fn IPv6::to_string(self : IPv6) -> String {
   let address = self.0
   // Find the longest sequence of consecutive 0 pieces for compression
-  let mut compress_start : Int? = None
+  let mut compress_start : Int32? = None
   let mut compress_len = 0
-  let mut current_start : Int? = None
+  let mut current_start : Int32? = None
   let mut current_len = 0
   for i = 0; i < 8; i = i + 1 {
     if address[i] == 0 {
@@ -84,7 +84,7 @@ pub impl Show for IPv6 with fn output(self : IPv6, logger : &Logger) -> Unit {
 ///|
 /// Implement ToJson trait for IPv6, outputting as array of 8 16-bit values
 pub impl ToJson for IPv6 with fn to_json(self : IPv6) -> Json {
-  self.0.to_json()
+  Json(self.0)
 }
 
 ///|
@@ -94,9 +94,9 @@ pub fn IPv6::parse(input : StringView) -> IPv6 raise ValidationError {
   // 1. Let `address` be a new IPv6 address whose pieces are all 0.
   let address : FixedArray[UInt16] = FixedArray::make(8, 0)
   // 2. Let `piece_index` be `0`.
-  let mut piece_index : Int = 0
+  let mut piece_index : Int32 = 0
   // 3. Let compress be `None`.
-  let mut compress : Int? = None
+  let mut compress : Int32? = None
 
   // 4. Let `pointer` be a pointer for `input`.
   //
@@ -149,17 +149,17 @@ pub fn IPv6::parse(input : StringView) -> IPv6 raise ValidationError {
         //      and increase pointer and `length` by 1.
         let remaining = for input = input; length < 4; {
           match input {
-            ['0'..='9' as c, .. rest] => {
+            ['0'..<='9' as c, .. rest] => {
               value = value * 0x10 + (c.to_int().to_uint16() - '0')
               length = length + 1
               continue rest
             }
-            ['a'..='f' as c, .. rest] => {
+            ['a'..<='f' as c, .. rest] => {
               value = value * 0x10 + (c.to_int().to_uint16() - 'a' + 10)
               length = length + 1
               continue rest
             }
-            ['A'..='F' as c, .. rest] => {
+            ['A'..<='F' as c, .. rest] => {
               value = value * 0x10 + (c.to_int().to_uint16() - 'A' + 10)
               length = length + 1
               continue rest
@@ -223,12 +223,12 @@ pub fn IPv6::parse(input : StringView) -> IPv6 raise ValidationError {
                     raise IPv4InIPv6InvalidCodePoint
                   }
                 // 6.5.5.4. While `c` is an ASCII digit:
-                ['0'..='9' as c, .. remaining] => {
+                ['0'..<='9' as c, .. remaining] => {
                   let mut ipv4_piece : UInt16 = c.to_int().to_uint16() - '0'
                   // 6.5.5.4. While `c` is an ASCII digit:
                   let remaining = for remaining = remaining {
                     match remaining {
-                      ['0'..='9' as c, .. remaining] => {
+                      ['0'..<='9' as c, .. remaining] => {
                         // 6.5.5.4.1. Let `number` be `c` interpreted as decimal number.
                         let number = c.to_int().to_uint16() - '0'
                         // 6.5.5.4.2. If `ipv4_piece` is `None`, then set `ipv4_piece`

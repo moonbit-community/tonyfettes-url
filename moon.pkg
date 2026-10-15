@@ -1,5 +1,6 @@
 import {
-  "tonyfettes/unicode/idna",
+  "moonbit-community/unicode/idna",
+  "moonbitlang/core/debug",
   "moonbitlang/core/encoding/utf8" @encoding/utf8,
 }
 

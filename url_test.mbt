@@ -106,13 +106,13 @@ test "Url::to_json" {
   // Per WHATWG spec, toJSON() returns the serialization (same as href/toString)
   let url = @url.Url::parse("https://example.com/path?query=1#hash")
   inspect(
-    url.to_json().stringify(),
+    Json(url).stringify(),
     content="\"https://example.com/path?query=1#hash\"",
   )
   // Test with all URL components
   let full = @url.Url::parse("https://user:pass@example.com:8080/path?q=1#frag")
   inspect(
-    full.to_json().stringify(),
+    Json(full).stringify(),
     content="\"https://user:pass@example.com:8080/path?q=1#frag\"",
   )
 }
