@@ -42,7 +42,7 @@ pub fn UrlSearchParams::from_pairs(
 /// Encodes everything EXCEPT: 0-9, A-Z, a-z, *, -, ., _
 fn urlencoded_percent_encode_set(char : Char) -> Bool {
   match char {
-    '0'..='9' | 'A'..='Z' | 'a'..='z' | '*' | '-' | '.' | '_' => false
+    '0'..<='9' | 'A'..<='Z' | 'a'..<='z' | '*' | '-' | '.' | '_' => false
     _ => true
   }
 }
@@ -146,7 +146,7 @@ pub fn UrlSearchParams::to_string(self : UrlSearchParams) -> String {
 ///|
 /// Return the number of name-value pairs.
 /// See: https://url.spec.whatwg.org/#dom-urlsearchparams-size
-pub fn UrlSearchParams::size(self : UrlSearchParams) -> Int {
+pub fn UrlSearchParams::size(self : UrlSearchParams) -> Int32 {
   self.list.length()
 }
 
@@ -256,7 +256,7 @@ pub fn UrlSearchParams::set(
 /// Compare two strings by UTF-16 code unit order.
 /// WHATWG URL Standard requires sorting by "code unit less than".
 /// See: https://infra.spec.whatwg.org/#code-unit-less-than
-fn compare_utf16_code_units(a : String, b : String) -> Int {
+fn compare_utf16_code_units(a : String, b : String) -> Int32 {
   let iter_a = a.iter()
   let iter_b = b.iter()
   while true {
@@ -271,7 +271,7 @@ fn compare_utf16_code_units(a : String, b : String) -> Int {
         let code_b = cb.to_int()
         // For BMP characters (< 0x10000), code point == code unit
         // For supplementary characters, compare by high surrogate first
-        let (unit_a, next_a) : (Int, Int?) = if code_a >= 0x10000 {
+        let (unit_a, next_a) : (Int32, Int32?) = if code_a >= 0x10000 {
           // Compute high surrogate: 0xD800 + ((code - 0x10000) >> 10)
           let high = 0xD800 + ((code_a - 0x10000) >> 10)
           let low = 0xDC00 + ((code_a - 0x10000) & 0x3FF)
@@ -279,7 +279,7 @@ fn compare_utf16_code_units(a : String, b : String) -> Int {
         } else {
           (code_a, None)
         }
-        let (unit_b, next_b) : (Int, Int?) = if code_b >= 0x10000 {
+        let (unit_b, next_b) : (Int32, Int32?) = if code_b >= 0x10000 {
           let high = 0xD800 + ((code_b - 0x10000) >> 10)
           let low = 0xDC00 + ((code_b - 0x10000) & 0x3FF)
           (high, Some(low))
@@ -365,5 +365,5 @@ pub impl Show for UrlSearchParams with fn output(
 ///|
 /// Serialize UrlSearchParams to JSON as a string.
 pub impl ToJson for UrlSearchParams with fn to_json(self : UrlSearchParams) -> Json {
-  self.to_string().to_json()
+  Json(self.to_string())
 }

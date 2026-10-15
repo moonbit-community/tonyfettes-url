@@ -9,11 +9,13 @@ import {
 
 // Errors
 type ValidationError derive(ToJson, @debug.Debug)
+pub fn ValidationError::to_string(Self) -> String
 pub impl Show for ValidationError
 
 pub suberror ValidationErrors {
   ValidationErrors(Array[ValidationError])
 } derive(@debug.Debug)
+pub fn ValidationErrors::to_string(Self) -> String
 pub impl Show for ValidationErrors
 
 // Types and methods

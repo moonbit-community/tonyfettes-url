@@ -1,9 +1,9 @@
 name = "tonyfettes/url"
 
-version = "0.3.4"
+version = "0.3.5"
 
 import {
-  "tonyfettes/unicode@0.3.0",
+  "moonbit-community/unicode@0.6.0",
 }
 
 readme = "README.md"

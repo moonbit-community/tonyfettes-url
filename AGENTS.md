@@ -70,7 +70,7 @@ Different URL components use different encoding sets defined in `url.mbt`:
 
 ## Dependencies
 
-- `tonyfettes/unicode`: Provides IDNA support via `@idna.to_ascii()` for Punycode domain name conversion
+- `moonbit-community/unicode`: Provides IDNA support via `@idna.to_ascii()` for Punycode domain name conversion
 
 ## Testing
 
