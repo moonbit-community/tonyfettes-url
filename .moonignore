@@ -1,0 +1,22 @@
+# Files excluded from the archives built by `moon package` / `moon publish`.
+#
+# Publishing honors `.gitignore` by default, but a directory that has a
+# `.moonignore` uses it *instead of* that directory's `.gitignore`, so the
+# build and dependency directories ignored by `.gitignore` are repeated here.
+
+# Build output and local dependency cache
+_build/
+target/
+.mooncakes/
+publish/
+
+# Development-only material (the WHATWG spec is a git submodule)
+/docs/
+/scripts/
+/spec/
+/AGENTS.md
+/CLAUDE.md
+
+# Test suites
+*_test.mbt
+*_wbtest.mbt
