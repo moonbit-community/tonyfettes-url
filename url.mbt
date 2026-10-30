@@ -703,7 +703,7 @@ fn StringPointer::new(input : StringView) -> StringPointer {
 
 ///|
 fn StringPointer::view(self : StringPointer) -> StringView {
-  self.input.data().view(start_offset=self.pointer)
+  self.input.data()[self.pointer:]
 }
 
 ///|
@@ -728,7 +728,7 @@ fn StringPointer::increase(self : StringPointer) -> Unit {
 ///|
 fn StringPointer::decrease(self : StringPointer) -> Unit {
   // Get the StringView from start of input up to (but not including) current pointer
-  let before = self.input.data().view(end_offset=self.pointer)
+  let before = self.input.data()[:self.pointer]
   match before {
     [] => () // Already at the start, do nothing
     [_] => self.pointer = before.start_offset() // One char, move to its start
