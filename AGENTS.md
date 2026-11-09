@@ -23,10 +23,22 @@ moon test -F "test_name_pattern"                    # Run tests matching glob pa
 
 ### Publishing
 
+`moon publish` runs from the repository root. The root `.moonignore` decides
+what goes into the archive: the library sources, the manifests, `README.md` and
+`LICENSE`, while the tests, `docs/`, `scripts/` and the `spec/` submodule stay
+out. Inspect the file list with `moon package --list`, then:
+
 ```bash
-python3 scripts/publish.py                          # Prepare clean publish directory
-cd publish && moon publish                          # Publish to mooncakes registry
+moon publish
 ```
+
+### Releasing
+
+Releases are version bumps only, matching `release: v0.3.3` and
+`release: v0.3.4`. Land the feature and fix PRs on `main` first, then open a
+dedicated PR that changes only the `version` field in `moon.mod`, titled
+`release: vX.Y.Z`. Once it is merged, run `moon publish` from an up-to-date
+`main`; the version must be greater than the one already on mooncakes.
 
 ## Architecture
 
