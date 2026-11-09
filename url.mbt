@@ -43,9 +43,10 @@ pub fn Url::try_parse(
 }
 
 ///|
+#derive(Debug)
 pub suberror ValidationErrors {
   ValidationErrors(Array[ValidationError])
-} derive(Debug)
+}
 
 ///|
 pub impl Show for ValidationErrors with fn output(self, logger) {
