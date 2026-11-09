@@ -82,7 +82,7 @@ Different URL components use different encoding sets defined in `url.mbt`:
 
 ## Dependencies
 
-- `moonbit-community/unicode`: Provides IDNA support via `@idna.to_ascii()` for Punycode domain name conversion
+- `moonbit-community/unicode-idna` (imported as `@idna` in `moon.pkg`): Provides IDNA support via `@idna.to_ascii()` for Punycode domain name conversion
 
 ## Testing
 
