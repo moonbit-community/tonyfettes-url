@@ -574,24 +574,8 @@ fn has_empty_host(host : Host?) -> Bool {
 ///|
 /// Encode only the LAST trailing space as %20 for opaque paths before query/fragment
 fn encode_last_trailing_space(s : String) -> String {
-  // Check if the string ends with a space
-  let len = s.length()
-  if len == 0 {
-    return s
-  }
-  match s.get_char(len - 1) {
-    Some(' ') => {
-      // Replace only the last space with %20
-      let result = StringBuilder()
-      for i, c in s {
-        if i == len - 1 {
-          result.write_string("%20")
-        } else {
-          result.write_char(c)
-        }
-      }
-      result.to_string()
-    }
+  match s {
+    [.. rest, ' '] => "\{rest}%20"
     _ => s // No trailing space
   }
 }
@@ -1214,12 +1198,7 @@ fn Url::parse_basic(
               }
               // Check if port is default for the scheme
               let port_u16 = port_value.to_uint16()
-              let is_default = match url.scheme {
-                "ftp" => port_u16 == 21
-                "http" | "ws" => port_u16 == 80
-                "https" | "wss" => port_u16 == 443
-                _ => false
-              }
+              let is_default = default_port(url.scheme) == Some(port_u16)
               url.port = if is_default { None } else { Some(port_u16) }
               buffer.reset()
               if has_state_override {
@@ -1684,62 +1663,41 @@ fn Url::parse_basic(
           if has_port {
             // Split at port separator
             let last_colon = port_separator
-            if last_colon > 0 {
-              // Extract host and port using character iteration
-              let host_builder = StringBuilder()
-              let port_builder = StringBuilder()
-              let mut past_colon = false
-              let mut char_idx = 0
-              for c in buffer_str {
-                if char_idx == last_colon {
-                  past_colon = true
-                } else if past_colon {
-                  port_builder.write_char(c)
-                } else {
-                  host_builder.write_char(c)
-                }
-                char_idx = char_idx + 1
+            // Extract host and port using character iteration
+            let host_builder = StringBuilder()
+            let port_builder = StringBuilder()
+            for i, c in buffer_str {
+              if i > last_colon {
+                port_builder.write_char(c)
+              } else if i < last_colon {
+                host_builder.write_char(c)
               }
-              let host_part = host_builder.to_string()
-              let port_part = port_builder.to_string()
-              // Parse host
-              let host = Host::parse(host_part, is_opaque=!url.is_special()) catch {
-                err => {
-                  validation_errors.push(err)
+            }
+            let host_part = host_builder.to_string()
+            let port_part = port_builder.to_string()
+            // Parse host
+            let host = Host::parse(host_part, is_opaque=!url.is_special()) catch {
+              err => {
+                validation_errors.push(err)
+                return None
+              }
+            }
+            url.host = Some(host)
+            // Parse port
+            if !port_part.is_empty() {
+              let mut port_value : UInt64 = 0
+              for ch in port_part {
+                if !ch.is_ascii_digit() {
+                  return None // Invalid port character
+                }
+                port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
+                if port_value > 65535 {
                   return None
                 }
               }
-              url.host = Some(host)
-              // Parse port
-              if !port_part.is_empty() {
-                let mut port_value : UInt64 = 0
-                for ch in port_part {
-                  if !ch.is_ascii_digit() {
-                    return None // Invalid port character
-                  }
-                  port_value = port_value * 10 + (ch.to_int() - '0').to_uint64()
-                  if port_value > 65535 {
-                    return None
-                  }
-                }
-                let port_u16 = port_value.to_uint16()
-                let is_default = match url.scheme {
-                  "ftp" => port_u16 == 21
-                  "http" | "ws" => port_u16 == 80
-                  "https" | "wss" => port_u16 == 443
-                  _ => false
-                }
-                url.port = if is_default { None } else { Some(port_u16) }
-              }
-            } else {
-              // Colon at start means empty host - parse whole buffer as host
-              let host = Host::parse(buffer_str, is_opaque=!url.is_special()) catch {
-                err => {
-                  validation_errors.push(err)
-                  return None
-                }
-              }
-              url.host = Some(host)
+              let port_u16 = port_value.to_uint16()
+              let is_default = default_port(url.scheme) == Some(port_u16)
+              url.port = if is_default { None } else { Some(port_u16) }
             }
           } else {
             // No port, just parse as host
@@ -1794,12 +1752,7 @@ fn Url::parse_basic(
             }
           }
           let port_u16 = port_value.to_uint16()
-          let is_default = match url.scheme {
-            "ftp" => port_u16 == 21
-            "http" | "ws" => port_u16 == 80
-            "https" | "wss" => port_u16 == 443
-            _ => false
-          }
+          let is_default = default_port(url.scheme) == Some(port_u16)
           url.port = if is_default { None } else { Some(port_u16) }
         } else if has_state_override {
           return None
@@ -1873,32 +1826,24 @@ fn Url::parse_basic(
         if buffer_str.is_empty() {
           url.host = Some(Opaque(""))
         } else {
-          // Check for Windows drive letter using explicit char access
-          let is_drive_letter = buffer_str.length() == 2 &&
-            (match buffer_str.get_char(0) {
-              Some(c) => c.is_ascii_alphabetic()
-              None => false
-            }) &&
-            (match buffer_str.get_char(1) {
-              Some(':') | Some('|') => true
-              _ => false
-            })
-          if is_drive_letter {
+          match buffer_str {
             // Windows drive letter in host position (normalize | to :)
-            url.host = Some(Opaque(""))
-            let letter = buffer_str.get_char(0).unwrap()
-            url.path = Segments(["\{letter}:"])
-          } else {
-            let host = Host::parse(buffer_str) catch {
-              err => {
-                validation_errors.push(err)
-                return None
-              }
-            }
-            if host is Domain("localhost") {
+            [letter, ':' | '|'] if letter.is_ascii_alphabetic() => {
               url.host = Some(Opaque(""))
-            } else {
-              url.host = Some(host)
+              url.path = Segments(["\{letter}:"])
+            }
+            _ => {
+              let host = Host::parse(buffer_str) catch {
+                err => {
+                  validation_errors.push(err)
+                  return None
+                }
+              }
+              if host is Domain("localhost") {
+                url.host = Some(Opaque(""))
+              } else {
+                url.host = Some(host)
+              }
             }
           }
         }

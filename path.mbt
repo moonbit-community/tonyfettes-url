@@ -18,7 +18,7 @@ pub fn Path::to_string(self : Path) -> String {
       if segments.is_empty() {
         ""
       } else {
-        "/" + segments.iter().map(fn(s) { s }).join("/")
+        "/" + segments.join("/")
       }
   }
 }

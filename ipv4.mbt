@@ -88,10 +88,8 @@ pub fn IPv4::parse(input : StringView) -> IPv4 raise ValidationError {
   }
   // 9-12. Calculate final IPv4 value
   let mut ipv4 = last_number.to_uint()
-  let mut counter = 0
-  for n in numbers {
-    ipv4 = ipv4 + (n.to_uint() << (8 * (3 - counter)))
-    counter = counter + 1
+  for i, n in numbers {
+    ipv4 = ipv4 + (n.to_uint() << (8 * (3 - i)))
   }
   // 13. Return ipv4
   IPv4(ipv4)

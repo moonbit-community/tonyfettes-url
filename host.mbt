@@ -226,14 +226,12 @@ pub fn Host::parse(
           // Allow empty labels per WHATWG only if domain consists of
           // valid ASCII domain characters (intentional empty labels like "." or "..")
           // Reject if empty label comes from IDNA mapping (e.g., soft hyphen -> "")
-          let is_valid_ascii_domain = domain
-            .iter()
-            .all(fn(c) {
-              c.is_ascii_lowercase() ||
-              c.is_ascii_uppercase() ||
-              c.is_ascii_digit() ||
-              c is ('.' | '-')
-            })
+          let is_valid_ascii_domain = domain.all(fn(c) {
+            c.is_ascii_lowercase() ||
+            c.is_ascii_uppercase() ||
+            c.is_ascii_digit() ||
+            c is ('.' | '-')
+          })
           if is_valid_ascii_domain && !domain.is_empty() {
             domain
           } else {
@@ -245,7 +243,7 @@ pub fn Host::parse(
           // contain forbidden domain code points, use it as-is
           // This allows hosts like `!"$&'()*+,-.;=_`{}~` which are valid per spec
           // BUT: domains containing "xn--" labels must be valid punycode - reject if IDNA fails
-          let is_ascii = domain.iter().all(fn(c) { c.to_int() < 128 })
+          let is_ascii = domain.all(fn(c) { c.to_int() < 128 })
           let has_punycode_label = domain.to_lower().contains("xn--")
           if is_ascii &&
             !contains_forbidden_domain_codepoint(domain) &&
