@@ -85,33 +85,16 @@ fn urlencoded_parse(
 ///|
 /// Find first '=' in StringView and split into (name, value).
 fn find_first_equals(input : StringView) -> (String, String) {
-  let name_builder = StringBuilder()
-  let value_builder = StringBuilder()
-  let mut found_equals = false
-  for c in input {
-    if !found_equals && c == '=' {
-      found_equals = true
-    } else if found_equals {
-      value_builder.write_char(c)
-    } else {
-      name_builder.write_char(c)
-    }
+  match input.split_once("=") {
+    Some((name, value)) => (name.to_owned(), value.to_owned())
+    None => (input.to_owned(), "")
   }
-  (name_builder.to_string(), value_builder.to_string())
 }
 
 ///|
 /// Replace all `+` characters with spaces.
 fn replace_plus_with_space(input : String) -> String {
-  let output = StringBuilder()
-  for c in input {
-    if c == '+' {
-      output.write_char(' ')
-    } else {
-      output.write_char(c)
-    }
-  }
-  output.to_string()
+  input.replace_all(old="+", new=" ")
 }
 
 ///|
@@ -196,13 +179,9 @@ pub fn UrlSearchParams::get_all(
   self : UrlSearchParams,
   name : String,
 ) -> Array[String] {
-  let result : Array[String] = []
-  for pair in self.list {
-    if pair.0 == name {
-      result.push(pair.1)
-    }
-  }
-  result
+  [
+    for pair in self.list if pair.0 == name => pair.1
+  ]
 }
 
 ///|
@@ -215,8 +194,8 @@ pub fn UrlSearchParams::has(
   value? : String,
 ) -> Bool {
   match value {
-    Some(v) => self.list.iter().any(fn(pair) { pair.0 == name && pair.1 == v })
-    None => self.list.iter().any(fn(pair) { pair.0 == name })
+    Some(v) => self.list.any(fn(pair) { pair.0 == name && pair.1 == v })
+    None => self.list.any(fn(pair) { pair.0 == name })
   }
 }
 
