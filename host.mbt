@@ -2,12 +2,13 @@
 /// Represents a URL host per the WHATWG URL Standard.
 /// See: https://url.spec.whatwg.org/#host-representation
 /// Can be a domain name, IPv4 address, IPv6 address, or opaque string.
+#derive(ToJson, Debug)
 pub enum Host {
   Domain(String)
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-} derive(ToJson, Debug)
+}
 
 ///|
 /// Serialize host per WHATWG URL spec
@@ -43,6 +44,7 @@ pub fn Host::to_unicode(self : Host) -> String {
 ///|
 /// URL parsing validation errors per the WHATWG URL Standard.
 /// Each variant represents a specific parsing failure condition.
+#derive(ToJson, Debug)
 suberror ValidationError {
   DomainToAscii
   HostInvalidCodePoint
@@ -65,7 +67,7 @@ suberror ValidationError {
   InvalidReverseSolidus
   InvalidCredentials
   HostMissing
-} derive(ToJson, Debug)
+}
 
 ///|
 pub impl Show for ValidationError with fn output(self, logger) {

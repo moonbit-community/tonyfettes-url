@@ -3,44 +3,50 @@ package "tonyfettes/url"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
 
 // Errors
-type ValidationError derive(ToJson, @debug.Debug)
+#derive(@debug.Debug, @json.ToJson)
+type ValidationError
 pub fn ValidationError::to_string(Self) -> String
 pub impl Show for ValidationError
 
+#derive(@debug.Debug)
 pub suberror ValidationErrors {
   ValidationErrors(Array[ValidationError])
-} derive(@debug.Debug)
+}
 pub fn ValidationErrors::to_string(Self) -> String
 pub impl Show for ValidationErrors
 
 // Types and methods
+#derive(@debug.Debug, @json.ToJson)
 pub enum Host {
   Domain(String)
   IPv4(IPv4)
   IPv6(IPv6)
   Opaque(String)
-} derive(ToJson, @debug.Debug)
+}
 pub fn Host::parse(StringView, is_opaque? : Bool) -> Self raise ValidationError
 pub fn Host::to_string(Self) -> String
 pub fn Host::to_unicode(Self) -> String
 pub impl Show for Host
 
-type IPv4 derive(@debug.Debug)
+#derive(@debug.Debug)
+type IPv4
 pub fn IPv4::parse(StringView) -> Self raise ValidationError
 pub fn IPv4::to_string(Self) -> String
 pub impl Show for IPv4
-pub impl ToJson for IPv4
+pub impl @json.ToJson for IPv4
 
-type IPv6 derive(@debug.Debug)
+#derive(@debug.Debug)
+type IPv6
 pub fn IPv6::parse(StringView) -> Self raise ValidationError
 pub fn IPv6::to_string(Self) -> String
 pub impl Show for IPv6
-pub impl ToJson for IPv6
+pub impl @json.ToJson for IPv6
 
 type Path
 pub fn Path::to_string(Self) -> String
@@ -85,7 +91,7 @@ pub fn Url::to_string(Self) -> String
 pub fn Url::try_parse(StringView, base? : Self, validation_errors? : Array[ValidationError]) -> Self?
 pub fn Url::username(Self) -> String
 pub impl Show for Url
-pub impl ToJson for Url
+pub impl @json.ToJson for Url
 
 pub struct UrlSearchParams {
   mut list : Array[(String, String)]
@@ -107,7 +113,7 @@ pub fn UrlSearchParams::sort(Self) -> Unit
 pub fn UrlSearchParams::to_string(Self) -> String
 pub fn UrlSearchParams::values(Self) -> Iter[String]
 pub impl Show for UrlSearchParams
-pub impl ToJson for UrlSearchParams
+pub impl @json.ToJson for UrlSearchParams
 
 // Type aliases
 
