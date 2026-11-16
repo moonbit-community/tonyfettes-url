@@ -110,3 +110,11 @@ pub extend UrlSearchParams with Show::{output}
 #deprecated("Use `Json(value)` instead", skip_current_package=true)
 #doc(hidden)
 pub extend UrlSearchParams with ToJson::{to_json}
+
+///|
+pub extend UpdateError with Eq::{equal, not_equal}
+
+///|
+#deprecated("Use `Debug::to_repr` instead", skip_current_package=true)
+#doc(hidden)
+pub extend UpdateError with @debug.Debug::{to_repr}
