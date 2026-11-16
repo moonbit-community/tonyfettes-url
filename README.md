@@ -29,8 +29,8 @@ url.set_port("9000")
 let updated = url.with_scheme("http")
   .with_port(Some(8080))
   .with_path(@url.Path::from_segments(["new", "a/b"]))
-  .with_query(Some(@url.Query::from_text("q=hello world")))
-  .with_fragment(Some(@url.Fragment::parse("section%201")))
+  .with_query(Some("q=hello world"))
+  .with_fragment(Some("section%201"))
 // http://user:pass@example.com:8080/new/a%2Fb?q=hello%20world#section%201
 ```
 
@@ -87,8 +87,8 @@ URL do not affect the other.
 | `get_host()` | `Host?` without port | `with_host(Host?)` |
 | `get_port()` | `UInt16?` | `with_port(UInt16?)` |
 | `get_path()` | `Path` snapshot | `with_path(Path)` |
-| `get_query()` | `Query?` without `?` | `with_query(Query?)` |
-| `get_fragment()` | `Fragment?` without `#` | `with_fragment(Fragment?)` |
+| `get_query()` | `String?` without `?` | `with_query(String?)` |
+| `get_fragment()` | `String?` without `#` | `with_fragment(String?)` |
 | `get_search_params()` | detached mutable `UrlSearchParams` | `with_search_params(UrlSearchParams)` |
 | `get_origin()` | `Origin` (`Opaque` or `Tuple`) | — |
 
@@ -99,13 +99,13 @@ variants. Default ports normalize to `None`. Query, fragment and search-paramete
 updates cannot fail. Removing a query or fragment strips trailing spaces from an
 opaque path when both components are absent.
 
-`Query::parse` and `Fragment::parse` accept encoded component content and preserve
-percent escapes, including their spelling. Characters forbidden in the component
-are percent-encoded; leading `?` or `#` is content, not a delimiter to strip.
-Malformed percent escapes are preserved, matching the URL parser. `from_text`
-encodes literal `%` as `%25` as well. These methods encode tabs and newlines;
-the old search/hash setters retain their parser-style whitespace removal.
-A query installed on a special-scheme URL additionally encodes apostrophes.
+`with_query` and `with_fragment` accept component content as strings. They
+encode forbidden characters and preserve existing percent escapes, including
+malformed escapes, matching the URL parser. To represent a literal percent sign,
+pass `%25`. Leading `?` or `#` is content, not a delimiter to strip. Tabs and
+newlines are encoded; the old search/hash setters retain their parser-style
+whitespace removal. A query installed on a special-scheme URL additionally
+encodes apostrophes.
 
 `None` removes a query or fragment; a present empty component preserves the bare
 `?` or `#`. Queries are not assumed to be form data: `+`, `&` and `=` retain their

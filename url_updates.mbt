@@ -70,14 +70,14 @@ pub fn Url::get_path(self : Url) -> Path {
 
 ///|
 /// Encoded query content; absent and present-but-empty queries are distinct.
-pub fn Url::get_query(self : Url) -> Query? {
-  self.query.map(value => Query(value))
+pub fn Url::get_query(self : Url) -> String? {
+  self.query
 }
 
 ///|
 /// Encoded fragment content, excluding the `#` delimiter.
-pub fn Url::get_fragment(self : Url) -> Fragment? {
-  self.fragment.map(value => Fragment(value))
+pub fn Url::get_fragment(self : Url) -> String? {
+  self.fragment
 }
 
 ///|
@@ -254,39 +254,46 @@ pub fn Url::with_pathname(
 }
 
 ///|
-/// Replace an encoded query without re-encoding percent escapes. Apostrophes
+/// Replace query content, encoding forbidden characters and preserving percent
+/// escapes (including malformed ones). Do not include the `?` delimiter; a
+/// leading `?` is treated as content. Tabs and newlines are encoded. Apostrophes
 /// are additionally encoded for special schemes. `None` removes the query;
-/// `Some(Query::parse(""))` preserves a bare `?`.
+/// `Some("")` preserves a bare `?`.
 ///
 /// ```mbt check
 /// test {
 ///   let original = @url.Url::parse("https://example.com/a")
-///   let updated = original.with_query(
-///     Some(@url.Query::from_text("q=hello world")),
-///   )
+///   let updated = original.with_query(Some("q=hello world"))
 ///   inspect(original.to_string(), content="https://example.com/a")
 ///   inspect(updated.to_string(), content="https://example.com/a?q=hello%20world")
 /// }
 /// ```
-pub fn Url::with_query(self : Url, query : Query?) -> Url {
+pub fn Url::with_query(self : Url, query : String?) -> Url {
   let url = self.copy_for_update()
   url.query = query.map(value => {
-    if self.is_special() {
-      utf8_percent_encode(value.0, special_query_percent_encode_set)
-    } else {
-      value.0
-    }
+    utf8_percent_encode(
+      value,
+      if self.is_special() {
+        special_query_percent_encode_set
+      } else {
+        query_percent_encode_set
+      },
+    )
   })
   url.strip_opaque_trailing_spaces()
   url
 }
 
 ///|
-/// Replace an encoded fragment, without re-encoding it. `None` removes it;
+/// Replace fragment content, encoding forbidden characters and preserving
+/// percent escapes (including malformed ones). A leading `#` is content; tabs
+/// and newlines are encoded. `None` removes it;
 /// a present empty fragment preserves a bare `#`.
-pub fn Url::with_fragment(self : Url, fragment : Fragment?) -> Url {
+pub fn Url::with_fragment(self : Url, fragment : String?) -> Url {
   let url = self.copy_for_update()
-  url.fragment = fragment.map(value => value.0)
+  url.fragment = fragment.map(value => {
+    utf8_percent_encode(value, fragment_percent_encode_set)
+  })
   url.strip_opaque_trailing_spaces()
   url
 }

@@ -17,8 +17,8 @@ test "typed getters and with methods preserve components and legacy views" {
   assert_eq(url.get_host().map(h => h.to_string()), Some("example.com"))
   assert_eq(url.get_port(), Some(8080))
   assert_eq(url.get_path().segments().map(s => s.to_array()), Some(["a%2Fb"]))
-  assert_eq(url.get_query().map(q => q.to_string()), Some("q=%2F+"))
-  assert_eq(url.get_fragment().map(f => f.to_string()), Some("f%20x"))
+  assert_eq(url.get_query(), Some("q=%2F+"))
+  assert_eq(url.get_fragment(), Some("f%20x"))
   assert_eq(url.host(), "example.com:8080")
   assert_eq(url.port(), "8080")
   assert_eq(url.search(), "?q=%2F+")
@@ -26,45 +26,31 @@ test "typed getters and with methods preserve components and legacy views" {
 }
 
 ///|
-test "encoded components and raw text have distinct percent semantics" {
+test "query and fragment encode forbidden characters and preserve percent escapes" {
   let url = @url.Url::parse("https://example.com/")
+  assert_eq(url.with_query(Some("x=%2F a#b\t")).search(), "?x=%2F%20a%23b%09")
   assert_eq(
-    url.with_query(Some(@url.Query::parse("x=%2F a#b\t"))).search(),
-    "?x=%2F%20a%23b%09",
+    url.with_query(Some("x=%2F 中文")).search(),
+    "?x=%2F%20%E4%B8%AD%E6%96%87",
   )
-  assert_eq(
-    url.with_query(Some(@url.Query::from_text("x=%2F 中文"))).search(),
-    "?x=%252F%20%E4%B8%AD%E6%96%87",
-  )
-  assert_eq(
-    url.with_fragment(Some(@url.Fragment::parse("%2F x\n"))).hash(),
-    "#%2F%20x%0A",
-  )
-  assert_eq(
-    url.with_fragment(Some(@url.Fragment::from_text("%2F x"))).hash(),
-    "#%252F%20x",
-  )
-  assert_eq(url.with_query(Some(@url.Query::parse("'"))).search(), "?%27")
-  assert_eq(
-    @url.Url::parse("foo:/").with_query(Some(@url.Query::parse("'"))).search(),
-    "?'",
-  )
-  // Neither query nor fragment constructors strip a leading delimiter.
-  assert_eq(url.with_query(Some(@url.Query::parse("?x"))).search(), "??x")
-  assert_eq(url.with_fragment(Some(@url.Fragment::parse("#x"))).hash(), "##x")
+  assert_eq(url.with_fragment(Some("%2F x\n")).hash(), "#%2F%20x%0A")
+  assert_eq(url.with_fragment(Some("%2F x")).hash(), "#%2F%20x")
+  assert_eq(url.with_query(Some("'")).search(), "?%27")
+  assert_eq(@url.Url::parse("foo:/").with_query(Some("'")).search(), "?'")
+  // Leading delimiters are content, not stripped by the component updates.
+  assert_eq(url.with_query(Some("?x")).search(), "??x")
+  assert_eq(url.with_fragment(Some("#x")).hash(), "##x")
 }
 
 ///|
 test "absent and present empty query and fragment are distinct" {
   let url = @url.Url::parse("foo:/")
   assert_eq(url.with_query(None).with_fragment(None).to_string(), "foo:/")
-  let empty = url
-    .with_query(Some(@url.Query::parse("")))
-    .with_fragment(Some(@url.Fragment::parse("")))
+  let empty = url.with_query(Some("")).with_fragment(Some(""))
   assert_eq(empty.to_string(), "foo:/?#")
-  assert_eq(empty.get_query().map(q => q.to_string()), Some(""))
-  assert_eq(empty.get_fragment().map(f => f.to_string()), Some(""))
-  assert_eq(url.get_query().map(q => q.to_string()), None)
+  assert_eq(empty.get_query(), Some(""))
+  assert_eq(empty.get_fragment(), Some(""))
+  assert_eq(url.get_query(), None)
 }
 
 ///|

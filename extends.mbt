@@ -112,22 +112,6 @@ pub extend UrlSearchParams with Show::{output}
 pub extend UrlSearchParams with ToJson::{to_json}
 
 ///|
-pub extend Query with Eq::{equal, not_equal}
-
-///|
-#deprecated("Use `Debug::to_repr` instead", skip_current_package=true)
-#doc(hidden)
-pub extend Query with @debug.Debug::{to_repr}
-
-///|
-pub extend Fragment with Eq::{equal, not_equal}
-
-///|
-#deprecated("Use `Debug::to_repr` instead", skip_current_package=true)
-#doc(hidden)
-pub extend Fragment with @debug.Debug::{to_repr}
-
-///|
 pub extend UpdateError with Eq::{equal, not_equal}
 
 ///|
