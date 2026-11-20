@@ -3,7 +3,7 @@ name = "tonyfettes/url"
 version = "0.3.5"
 
 import {
-  "moonbit-community/unicode-idna@0.7.1",
+  "moonbit-community/unicode-idna@0.8.1",
 }
 
 readme = "README.md"
