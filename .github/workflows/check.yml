@@ -5,6 +5,9 @@ on:
     branches:
       - "main"
 
+env:
+  MOON_SEPARATE_COMPILATION: "1"
+
 jobs:
   build:
     permissions:
